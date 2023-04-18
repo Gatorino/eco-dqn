@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import torch
 
+
 class SpinSolver(ABC):
     """Abstract base class for agents solving SpinSystem Ising problems."""
 
@@ -71,6 +72,7 @@ class SpinSolver(ABC):
 
         raise NotImplementedError()
 
+
 class Greedy(SpinSolver):
     """A greedy solver for a SpinSystem."""
 
@@ -96,14 +98,16 @@ class Greedy(SpinSolver):
             done (bool): Whether the environment is in a terminal state after
                 the action is taken.
         """
-        rewards_avaialable = self.env.get_immeditate_rewards_avaialable()
+        rewards_avaialable = np.array(
+            self.env.get_immeditate_rewards_avaialable())[:, 0]
 
         if self.env.reversible_spins:
             action = rewards_avaialable.argmax()
         else:
             masked_rewards_avaialable = rewards_avaialable.copy()
             np.putmask(masked_rewards_avaialable,
-                       self.env.get_observation()[0, :] != self.env.get_allowed_action_states(),
+                       self.env.get_observation(
+                       )[0, :] != self.env.get_allowed_action_states(),
                        -100)
             action = masked_rewards_avaialable.argmax()
 
@@ -115,6 +119,7 @@ class Greedy(SpinSolver):
             observation, reward, done, _ = self.env.step(action)
 
         return reward, done
+
 
 class Random(SpinSolver):
     """A random solver for a SpinSystem."""
@@ -128,8 +133,10 @@ class Random(SpinSolver):
                 the action is taken.
         """
 
-        observation, reward, done, _ = self.env.step(self.env.action_space.sample())
+        observation, reward, done, _ = self.env.step(
+            self.env.action_space.sample())
         return reward, done
+
 
 class Network(SpinSolver):
     """A network-only solver for a SpinSystem."""
@@ -148,11 +155,13 @@ class Network(SpinSolver):
         """
 
         super().__init__(*args, **kwargs)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu")
         self.network = network.to(self.device)
         self.network.eval()
         self.current_observation = self.env.get_observation()
-        self.current_observation = torch.FloatTensor(self.current_observation).to(self.device)
+        self.current_observation = torch.FloatTensor(
+            self.current_observation).to(self.device)
 
         self.history = []
 
@@ -161,7 +170,8 @@ class Network(SpinSolver):
             self.current_observation = self.env.reset()
         else:
             self.current_observation = self.env.reset(spins)
-        self.current_observation = torch.FloatTensor(self.current_observation).to(self.device)
+        self.current_observation = torch.FloatTensor(
+            self.current_observation).to(self.device)
         self.total_reward = 0
 
         if clear_history:
@@ -182,7 +192,8 @@ class Network(SpinSolver):
                 action = np.random.randint(0, self.env.action_space.n)
 
         else:
-            x = (self.current_observation[0, :] == self.env.get_allowed_action_states()).nonzero()
+            x = (self.current_observation[0, :] ==
+                 self.env.get_allowed_action_states()).nonzero()
             if np.random.uniform(0, 1) >= self.epsilon:
                 action = x[qs[x].argmax().item()].item()
                 # Allowed action that maximises Q function
@@ -192,7 +203,8 @@ class Network(SpinSolver):
 
         if action is not None:
             observation, reward, done, _ = self.env.step(action)
-            self.current_observation = torch.FloatTensor(observation).to(self.device)
+            self.current_observation = torch.FloatTensor(
+                observation).to(self.device)
 
         else:
             reward = 0
