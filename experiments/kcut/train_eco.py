@@ -1,6 +1,7 @@
 import os
 import pickle
 import argparse
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,19 +23,21 @@ try:
 except ImportError:
     pass
 
-import time
-
 parser = argparse.ArgumentParser(description='Arguments of the environment.')
 parser.add_argument('-k', '--n_sets', type=int,
                     required=True, help='Number of sets.')
 parser.add_argument('-s', '--n_spins', type=int,
                     required=True, help='Number of vertices in the graphs.')
+parser.add_argument('-l', '--save_loc', type=str,
+                    required=True, default="kcut/eco/2sets", help='Save path of the training.')
 args = parser.parse_args()
+print("==============saveloc")
 n_sets = args.n_sets
 n_spins = args.n_spins
+save_loc = args.save_loc
 
 
-def run(save_loc=f"kcut/eco/{n_sets}sets"):
+def run(save_loc=save_loc):
 
     print("\n----- Running {} -----\n".format(os.path.basename(__file__)))
 

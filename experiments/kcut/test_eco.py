@@ -18,24 +18,36 @@ try:
 except ImportError:
     pass
 
+# Change number of sets and vertices of the graph.
 parser = argparse.ArgumentParser(description='Arguments of the environment.')
 parser.add_argument('-k', '--n_sets', type=int,
                     required=True, help='Number of sets.')
 parser.add_argument('-s', '--n_spins', type=int,
-                    required=True, help='Number of vertices in the graphs.')
+                    required=True, help='Number of vertices of the training graphs.')
+parser.add_argument('-l', '--save_loc', type=str,
+                    required=True, help='Directory for the results.')
+parser.add_argument('-g', '--graph_spins', type=int,
+                    required=True, help='Number of spins of the validation graphs.')
 args = parser.parse_args()
 n_sets = args.n_sets
 n_spins = args.n_spins
+save_loc = args.save_loc
+graph_spins = args.graph_spins
+
+# kcut/eco/{n_sets}sets/test/
 
 
-def run(save_loc=f"temp/kcut/eco/{n_sets}sets/test/",
-        network_save_loc="experiments/pretrained_agent/networks/eco/network_best_BA_20spin.pth",
+def run(save_loc=f"kcut/eco/{n_sets}sets/test/",
+        # network_save_loc="experiments/pretrained_agent/networks/eco/network_best_BA_20spin.pth",
         # network_save_loc=f"kcut/eco/{n_sets}sets/network/network_best.pth",
-        graph_save_loc=f"_graphs/validation/BA_{n_spins}spin_m4_100graphs.pkl",
+        # graph_save_loc=f"_graphs/validation/BA_{n_spins}spin_m4_100graphs.pkl",
         batched=True,
         max_batch_size=None,
         step_factor=None,
         n_attemps=50):
+
+    network_save_loc = f"kcut/eco/{n_sets}sets/network/network_best.pth"
+    graph_save_loc = f"_graphs/validation/BA_{graph_spins}spin_m4_100graphs.pkl"
 
     print("\n----- Running {} -----\n".format(os.path.basename(__file__)))
 
