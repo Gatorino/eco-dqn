@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from operator import matmul
+import time
 
 import numpy as np
 import torch.multiprocessing as mp
@@ -369,7 +370,6 @@ class SpinSystemBase(ABC):
         ############################################################
         # 1. Performs the action and calculates the score change. #
         ############################################################
-
         if action == self.n_spins:
             if self.extra_action == ExtraAction.PASS:
                 delta_score = 0
@@ -453,7 +453,6 @@ class SpinSystemBase(ABC):
         else:
             self.best_obs_score = self.best_score
             self.best_obs_spins = self.best_spins.copy()
-
         #############################################################################################
         # 3. Updates the state of the system (except self.state[0,:] as this is always the spin     #
         #    configuration and has already been done.                                               #
@@ -652,8 +651,7 @@ class SpinSystemUnbiased(SpinSystemBase):
         Computes the cut value of a graph given its adjacency matrix and a list of node set memberships.
 
         Args:
-            adj_matrix (np.ndarray): The adjacency matrix of the input graph.
-            set_membership (np.ndarray): A list or array indicating the set membership of each node.
+            adj_matrix (np.ndarray): The adjacency matrix of the input graph. Uses the matrix from the class.
 
         Returns:
             float: The cut value of the input graph.
@@ -699,7 +697,8 @@ class SpinSystemUnbiased(SpinSystemBase):
     #     return -1 * new_spins[action] * matmul(new_spins.T, matrix[:, action])
 
     @staticmethod
-    # @jit(float64(float64[:], float64[:, :], int64, int64), nopython=True)
+    @jit('Tuple((float64, int64))(float64[:], float64[:, :], int64, int64)', nopython=True)
+    # @jit(nopython=True)
     def _calculate_cut_change(set_membership, adj_matrix, action, n_sets):
         """
         Given a vertex (action), computes all the possible changes and returns the best set and the associated reward.
@@ -784,14 +783,16 @@ class SpinSystemUnbiased(SpinSystemBase):
             list(tuple(float, int)): The positive change of cut value and corresponding best set. 
                                     Positive means increased cut value. Negative means decreased cut value.
         """
-        immediate_cuts_available = []
-        for action in range(len(set_membership)):
-            best_immediate_reward, target_set = SpinSystemUnbiased._calculate_cut_change(
-                set_membership, adj_matrix, action, n_sets)
-            # print(rew, target)
-            immediate_cuts_available.append(
-                (best_immediate_reward, target_set))
-        return immediate_cuts_available
+        # immediate_cuts_available = []
+        # for action in range(len(set_membership)):
+        #     best_immediate_reward, target_set = SpinSystemUnbiased._calculate_cut_change(
+        #         set_membership, adj_matrix, action, n_sets)
+        #     # print(rew, target)
+        #     immediate_cuts_available.append(
+        #         (best_immediate_reward, target_set))
+
+        return [SpinSystemUnbiased._calculate_cut_change(
+            set_membership, adj_matrix, action, n_sets) for action in range(len(set_membership))]
 
 
 class SpinSystemBiased(SpinSystemBase):
