@@ -2,11 +2,15 @@ import os
 
 import matplotlib.pyplot as plt
 import torch
+import argparse
+import numpy as np
+import time
 
 import src.envs.core as ising_env
+from vns import vns
 from experiments.utils import test_network, load_graph_set, mk_dir
-from src.envs.utils import (SingleGraphGenerator,
-                            RewardSignal, ExtraAction,
+from src.envs.utils import (SingleGraphGenerator, RandomBarabasiAlbertGraphGenerator,
+                            RewardSignal, ExtraAction, EdgeType,
                             OptimisationTarget, SpinBasis,
                             DEFAULT_OBSERVABLES)
 from src.networks.mpnn import MPNN
@@ -18,14 +22,25 @@ except ImportError:
     pass
 
 
-def run(save_loc="kcut/eco/2sets/benchmark/best_ER_200spin/",
-        network_save_loc="experiments/pretrained_agent/networks/eco/network_best_ER_200spin.pth",
-        # graph_save_loc="_graphs/validation/ER_200spin_p15_100graphs.pkl",
-        graph_save_loc="_graphs/benchmarks/ising_125spin_graphs.pkl",
+def run(
+        # save_loc=f"kcut/eco/{n_sets}sets/comparison",
+        # network_save_loc="experiments/pretrained_agent/networks/eco/network_best_BA_20spin.pth",
+        # network_save_loc=f"kcut/eco/{n_sets}sets/network/network_best.pth",
+        # graph_save_loc=f"_graphs/validation/BA_{n_spins}spin_m4_100graphs.pkl",
         batched=True,
         max_batch_size=None,
         step_factor=None,
         n_attemps=50):
+
+    # n_spins_train = 2000
+    graph_spins = 200
+    n_sets = 2
+
+    save_loc = f"kcut/eco/{n_sets}sets/benchmarks"
+    # network_save_loc = f"kcut/eco/{n_sets}sets/100spins/network/network_best.pth"
+    network_save_loc = f"experiments/pretrained_agent/networks/eco/network_best_BA_{graph_spins}spin.pth"
+    # graph_save_loc = f"_graphs/validation/BA_{graph_spins}spin_m4_100graphs.pkl"
+    graph_save_loc = f"_graphs/benchmarks/ising_125spin_graphs.pkl"
 
     print("\n----- Running {} -----\n".format(os.path.basename(__file__)))
 
@@ -33,9 +48,9 @@ def run(save_loc="kcut/eco/2sets/benchmark/best_ER_200spin/",
     # FOLDER LOCATIONS
     ####################################################
 
-    print("save location :", save_loc)
-    print("network params :", network_save_loc)
-    mk_dir(save_loc)
+    # print("save location :", save_loc)
+    # print("network params :", network_save_loc)
+    # mk_dir(save_loc)
 
     ####################################################
     # NETWORK SETUP
@@ -56,7 +71,7 @@ def run(save_loc="kcut/eco/2sets/benchmark/best_ER_200spin/",
     if step_factor is None:
         step_factor = 2
 
-    env_args = {'n_sets': 2,
+    env_args = {'n_sets': n_sets,
                 'observables': DEFAULT_OBSERVABLES,
                 'reward_signal': RewardSignal.BLS,
                 'extra_action': ExtraAction.NONE,
@@ -73,7 +88,7 @@ def run(save_loc="kcut/eco/2sets/benchmark/best_ER_200spin/",
     # LOAD VALIDATION GRAPHS
     ####################################################
 
-    graphs_test = load_graph_set(graph_save_loc)
+    graphs_test = load_graph_set(graph_save_loc)  # 100 graphs
 
     ####################################################
     # SETUP NETWORK TO TEST
@@ -98,24 +113,33 @@ def run(save_loc="kcut/eco/2sets/benchmark/best_ER_200spin/",
 
     print("Sucessfully created agent with pre-trained MPNN.\nMPNN architecture\n\n{}".format(repr(network)))
 
-    ####################################################
-    # TEST NETWORK ON VALIDATION GRAPHS
-    ####################################################
+    # ####################################################
+    # # TEST NETWORK ON VALIDATION GRAPHS
+    # ####################################################
+    n_attemps = 50
+    # results, results_raw, history = test_network(network, env_args, [graphs_test[0]], device, step_factor,
+    #                                              return_raw=True, return_history=False, n_attempts=n_attemps,
+    #                                              batched=batched, max_batch_size=max_batch_size)
+    results, results_raw = test_network(network, env_args, graphs_test, device, step_factor,
+                                        return_raw=True, return_history=False, n_attempts=n_attemps,
+                                        batched=batched, max_batch_size=max_batch_size)
 
-    results, results_raw, history = test_network(network, env_args, graphs_test, device, step_factor,
-                                                 return_raw=True, return_history=True, n_attempts=n_attemps,
-                                                 batched=batched, max_batch_size=max_batch_size)
+    print("results", results)
 
+    # print("vns results", results)
     results_fname = "results_" + \
         os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + ".pkl"
     results_raw_fname = "results_" + \
         os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + "_raw.pkl"
-    history_fname = "results_" + \
-        os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + "_history.pkl"
+    # history_fname = "results_" + \
+    #     os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + "_history.pkl"
 
-    for res, fname, label in zip([results, results_raw, history],
-                                 [results_fname, results_raw_fname, history_fname],
-                                 ["results", "results_raw", "history"]):
+    # for res, fname, label in zip([results, results_raw, history],
+    #                              [results_fname, results_raw_fname, history_fname],
+    #                              ["results", "results_raw", "history"]):
+    for res, fname, label in zip([results, results_raw],
+                                 [results_fname, results_raw_fname],
+                                 ["results", "results_raw"]):
         save_path = os.path.join(save_loc, fname)
         res.to_pickle(save_path)
         print("{} saved to {}".format(label, save_path))
