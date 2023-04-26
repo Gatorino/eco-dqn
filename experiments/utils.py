@@ -10,6 +10,7 @@ import torch
 from collections import namedtuple
 from copy import deepcopy
 
+from vns import vns
 import src.envs.core as ising_env
 from src.envs.utils import (SingleGraphGenerator, SpinBasis)
 from src.agents.solver import Network, Greedy
@@ -18,16 +19,19 @@ from src.agents.solver import Network, Greedy
 # TESTING ON GRAPHS
 ####################################################
 
-def test_network(network, env_args, graphs_test,device=None, step_factor=1, batched=True,
+
+def test_network(network, env_args, graphs_test, device=None, step_factor=1, batched=True,
                  n_attempts=50, return_raw=False, return_history=False, max_batch_size=None):
     if batched:
         return __test_network_batched(network, env_args, graphs_test, device, step_factor,
                                       n_attempts, return_raw, return_history, max_batch_size)
     else:
         if max_batch_size is not None:
-            print("Warning: max_batch_size argument will be ignored for when batched=False.")
+            print(
+                "Warning: max_batch_size argument will be ignored for when batched=False.")
         return __test_network_sequential(network, env_args, graphs_test, step_factor,
                                          n_attempts, return_raw, return_history)
+
 
 def __test_network_batched(network, env_args, graphs_test, device=None, step_factor=1,
                            n_attempts=50, return_raw=False, return_history=False, max_batch_size=None):
@@ -64,11 +68,13 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 actions = qs.argmax(1, True).squeeze(1).cpu().numpy()
             return actions
         else:
+            print("Triggering allowed_action_state")
             if qs.dim() == 1:
-                x = (states.squeeze()[:,0] == allowed_action_state).nonzero()
+                x = (states.squeeze()[:, 0] == allowed_action_state).nonzero()
                 actions = [x[qs[x].argmax().item()].item()]
             else:
-                disallowed_actions_mask = (states[:, :, 0] != allowed_action_state)
+                disallowed_actions_mask = (
+                    states[:, :, 0] != allowed_action_state)
                 qs_allowed = qs.masked_fill(disallowed_actions_mask, -1000)
                 actions = qs_allowed.argmax(1, True).squeeze(1).cpu().numpy()
             return actions
@@ -96,18 +102,18 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                                   n_steps,
                                   **env_args)
 
-        print("Running greedy solver with +1 initialisation of spins...", end="...")
-        # Calculate the greedy cut with all spins initialised to +1
-        greedy_env = deepcopy(test_env)
-        greedy_env.reset(spins=np.array([1] * test_graph.shape[0]))
+        # print("Running greedy solver with +1 initialisation of spins...", end="...")
+        # # Calculate the greedy cut with all spins initialised to +1
+        # greedy_env = deepcopy(test_env)
+        # greedy_env.reset(spins=np.array([1] * test_graph.shape[0]))
 
-        greedy_agent = Greedy(greedy_env)
-        greedy_agent.solve()
+        # greedy_agent = Greedy(greedy_env)
+        # greedy_agent.solve()
 
-        greedy_single_cut = greedy_env.get_best_cut()
-        greedy_single_spins = greedy_env.best_spins
+        # greedy_single_cut = greedy_env.get_best_cut()
+        # greedy_single_spins = greedy_env.best_spins
 
-        print("done.")
+        # print("done.")
 
         if return_history:
             actions_history = []
@@ -118,10 +124,13 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         init_spins = []
         best_spins = []
 
-        greedy_cuts = []
-        greedy_spins = []
+        vns_cuts = []
+        vns_spins = []
+        # greedy_cuts = []
+        # greedy_spins = []
 
         while i_comp < n_attempts:
+            # print("New attempt")
 
             if max_batch_size is None:
                 batch_size = n_attempts
@@ -140,22 +149,29 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             init_spins_batch = [[] for _ in range(batch_size)]
             best_spins_batch = [[] for _ in range(batch_size)]
 
-            greedy_envs = [None] * batch_size
-            greedy_cuts_batch = []
-            greedy_spins_batch = []
+            # greedy_envs = [None] * batch_size
+            # greedy_cuts_batch = []
+            # greedy_spins_batch = []
+
+            vns_envs = [None] * batch_size
+            vns_cuts_batch = []
+            vns_spins_batch = []
 
             obs_batch = [None] * batch_size
 
-            print("Preparing batch of {} environments for graph {}.".format(batch_size,j), end="...")
+            print("Preparing batch of {} environments for graph {}.".format(
+                batch_size, j), end="...")
 
             for i in range(batch_size):
                 env = deepcopy(test_env)
                 obs_batch[i] = env.reset()
                 test_envs[i] = env
-                greedy_envs[i] = deepcopy(env)
+                # greedy_envs[i] = deepcopy(env)
+                vns_envs[i] = deepcopy(env)
                 init_spins_batch[i] = env.best_spins
             if return_history:
-                scores_history_batch.append([env.calculate_score() for env in test_envs])
+                scores_history_batch.append(
+                    [env.calculate_score() for env in test_envs])
 
             print("done.")
 
@@ -165,13 +181,22 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             # pool = mp.Pool(processes=16)
 
             k = 0
+            total_predict_time = 0
+            total_env_step_time = 0
+            total_history_time = 0
+            total_obs_conversion_time = 0
             while i_comp_batch < batch_size:
                 t1 = time.time()
                 # Note: Do not convert list of np.arrays to FloatTensor, it is very slow!
                 # see: https://github.com/pytorch/pytorch/issues/13918
                 # Hence, here we convert a list of np arrays to a np array.
+                obs_conversion_time = time.time()
                 obs_batch = torch.FloatTensor(np.array(obs_batch)).to(device)
+                total_obs_conversion_time += time.time()-obs_conversion_time
+                predict_time = time.time()
                 actions = predict(obs_batch)
+                total_predict_time += time.time()-predict_time
+                # print("Predict time", time.time()-predict_time)
                 obs_batch = []
 
                 if return_history:
@@ -179,15 +204,18 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                     rewards = []
 
                 i = 0
-                for env, action in zip(test_envs,actions):
+                for env, action in zip(test_envs, actions):
 
                     if env is not None:
-
+                        env_step_time = time.time()
                         obs, rew, done, info = env.step(action)
+                        total_env_step_time += time.time()-env_step_time
 
                         if return_history:
+                            history_time = time.time()
                             scores.append(env.calculate_score())
                             rewards.append(rew)
+                            total_history_time += time.time()-history_time
 
                         if not done:
                             obs_batch.append(obs)
@@ -197,33 +225,74 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                             i_comp_batch += 1
                             i_comp += 1
                             test_envs[i] = None
-                    i+=1
-                    k+=1
+                    i += 1
+                    k += 1
 
                 if return_history:
                     actions_history_batch.append(actions)
                     scores_history_batch.append(scores)
                     rewards_history_batch.append(rewards)
 
-                # print("\t",
-                #       "Par. steps :", k,
-                #       "Env steps : {}/{}".format(k/batch_size,n_steps),
-                #       'Time: {0:.3g}s'.format(time.time()-t1))
+            # print("\t",
+            #       "Par. steps :", k,
+            #       "Env steps : {}/{}".format(k/batch_size, n_steps),
+            #       'Time: {0:.3g}s'.format(time.time()-t1))
 
+            mean_env_step_time = total_env_step_time / (n_steps*n_attempts)
+            mean_predict_time = total_predict_time / n_steps
+            print("Mean env step", mean_env_step_time)
+            print("Total env step", total_env_step_time)
+            print("Mean predict time", mean_predict_time)
+            print("Total predict time", total_predict_time)
+            print("Total history time", total_history_time)
+            print("Total conversion time", total_obs_conversion_time)
             t_total += (time.time() - t_start)
-            i_batch+=1
+            i_batch += 1
             print("Finished agent testing batch {}.".format(i_batch))
+            print("Network Time", t_total)
 
             if env_args["reversible_spins"]:
-                print("Running greedy solver with {} random initialisations of spins for batch {}...".format(batch_size, i_batch), end="...")
 
-                for env in greedy_envs:
-                    Greedy(env).solve()
-                    cut = env.get_best_cut()
-                    greedy_cuts_batch.append(cut)
-                    greedy_spins_batch.append(env.best_spins)
+                print("Running vns with {} random initialisations of spins for batch {}...".format(
+                    batch_size, i_batch), end="...")
+
+                start_vns = time.time()
+
+                adjacency_matrix = test_graph
+
+                for env in vns_envs:
+                    # print("VNS solving")
+                    # current_time = time.time()-t_start
+                    # print("Time", current_time)
+                    state = env.state[0, :env.n_spins]
+                    solution = vns.vns(
+                        state, adjacency_matrix, n_sets=env.n_sets, k_max=25)
+                    cut = vns.compute_cut(solution, adjacency_matrix)
+                    vns_cuts_batch.append(cut)
+                    vns_spins_batch.append(solution)
 
                 print("done.")
+
+                # print("Running greedy solver with {} random initialisations of spins for batch {}...".format(
+                #     batch_size, i_batch), end="...")
+
+                # current_time = time.time()-t_start
+                # print("Time", current_time)
+                # start_greedy = time.time()
+
+                # for env in greedy_envs:
+                #     # print("Greedy solving")
+                #     # current_time = time.time()-t_start
+                #     # print("Time", current_time)
+                #     Greedy(env).solve()
+                #     cut = env.get_best_cut()
+                #     greedy_cuts_batch.append(cut)
+                #     greedy_spins_batch.append(env.best_spins)
+
+                # print("done.")
+            current_time = time.time()-t_start
+            # print("Time", current_time)
+            print("VNS Solver time", time.time()-start_vns)
 
             if return_history:
                 actions_history += actions_history_batch
@@ -234,14 +303,19 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             init_spins += init_spins_batch
             best_spins += best_spins_batch
 
-            if env_args["reversible_spins"]:
-                greedy_cuts += greedy_cuts_batch
-                greedy_spins += greedy_spins_batch
-
+        if env_args["reversible_spins"]:
+            vns_cuts += vns_cuts_batch
+            vns_spins += vns_spins_batch
+            vns_mean_cut = np.mean(vns_cuts)
+            #     greedy_cuts += greedy_cuts_batch
+            #     greedy_spins += greedy_spins_batch
 
             # print("\tGraph {}, par. steps: {}, comp: {}/{}".format(j, k, i_comp, batch_size),
             #       end="\r" if n_spins<100 else "")
 
+        print("Finished big while")
+        current_time = time.time()-t_start
+        print("Time", current_time)
         i_best = np.argmax(best_cuts)
         best_cut = best_cuts[i_best]
         sol = best_spins[i_best]
@@ -249,49 +323,65 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         mean_cut = np.mean(best_cuts)
 
         if env_args["reversible_spins"]:
-            idx_best_greedy = np.argmax(greedy_cuts)
-            greedy_random_cut = greedy_cuts[idx_best_greedy]
-            greedy_random_spins = greedy_spins[idx_best_greedy]
-            greedy_random_mean_cut = np.mean(greedy_cuts)
-        else:
-            greedy_random_cut = greedy_single_cut
-            greedy_random_spins = greedy_single_spins
-            greedy_random_mean_cut = greedy_single_cut
+            idx_best_vns = np.argmax(vns_cuts)
+            vns_cut = vns_cuts[idx_best_vns]
+            vns_spins = vns_spins[idx_best_vns]
+        #     idx_best_greedy = np.argmax(greedy_cuts)
+        #     greedy_random_cut = greedy_cuts[idx_best_greedy]
+        #     greedy_random_spins = greedy_spins[idx_best_greedy]
+        #     greedy_random_mean_cut = np.mean(greedy_cuts)
+        # else:
+        #     greedy_random_cut = greedy_single_cut
+        #     greedy_random_spins = greedy_single_spins
+        #     greedy_random_mean_cut = greedy_single_cut
 
-        print('Graph {}, best(mean) cut: {}({}), greedy cut (rand init / +1 init) : {} / {}.  ({} attempts in {}s)\t\t\t'.format(
-            j, best_cut, mean_cut, greedy_random_cut, greedy_single_cut, n_attempts, np.round(t_total,2)))
+        # print('Graph {}, best(mean) cut: {}({}), greedy cut (rand init / +1 init) : {} / {}.  ({} attempts in {}s)\t\t\t'.format(
+        #     j, best_cut, mean_cut, greedy_random_cut, greedy_single_cut, n_attempts, np.round(t_total, 2)))
 
-        results.append([best_cut, sol,
-                        mean_cut,
-                        greedy_single_cut, greedy_single_spins,
-                        greedy_random_cut, greedy_random_spins,
-                        greedy_random_mean_cut,
-                        t_total/(n_attempts)])
+        # results.append([best_cut, sol,
+        #                 mean_cut,
+        #                 greedy_single_cut, greedy_single_spins,
+        #                 greedy_random_cut, greedy_random_spins,
+        #                 greedy_random_mean_cut,
+        #                 t_total/(n_attempts)])
+        print("Best cut", best_cut)
+        print("mean cut", mean_cut)
+        # print("Greedy single cut", greedy_single_cut)
+        print("VNS best cut", vns_cut)
+        print("VNS mean cut", vns_mean_cut)
+        results.append(
+            [best_cut, mean_cut, sol, vns_cut, vns_mean_cut, vns_spins])
+
+        # print("Greedy Random cut", greedy_random_cut)
+        # print("Greedy random mean cut", greedy_random_mean_cut)
 
         results_raw.append([init_spins,
                             best_cuts, best_spins,
-                            greedy_cuts, greedy_spins])
+                            vns_cuts, vns_spins])
 
         if return_history:
             history.append([np.array(actions_history).T.tolist(),
                             np.array(scores_history).T.tolist(),
                             np.array(rewards_history).T.tolist()])
+    results = pd.DataFrame(data=results, columns=["best_cut", "mean_cut", "sol",
+                           "vns_cut", "vns_mean_cut", "vns_spins"])
 
-    results = pd.DataFrame(data=results, columns=["cut", "sol",
-                                                  "mean cut",
-                                                  "greedy (+1 init) cut", "greedy (+1 init) sol",
-                                                  "greedy (rand init) cut", "greedy (rand init) sol",
-                                                  "greedy (rand init) mean cut",
-                                                  "time"])
+    # results = pd.DataFrame(data=results, columns=["cut", "sol",
+    #                                               "mean cut",
+    #                                               "greedy (+1 init) cut", "greedy (+1 init) sol",
+    #                                               "greedy (rand init) cut", "greedy (rand init) sol",
+    #                                               "greedy (rand init) mean cut",
+    #                                               "time"])
 
     results_raw = pd.DataFrame(data=results_raw, columns=["init spins",
                                                           "cuts", "sols",
-                                                          "greedy cuts", "greedy sols"])
+                                                          "vns cuts", "vns sols"])
 
     if return_history:
-        history = pd.DataFrame(data=history, columns=["actions", "scores", "rewards"])
+        history = pd.DataFrame(data=history, columns=[
+                               "actions", "scores", "rewards"])
 
-    if return_raw==False and return_history==False:
+    if return_raw == False and return_history == False:
         return results
     else:
         ret = [results]
@@ -301,11 +391,13 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             ret.append(history)
         return ret
 
+
 def __test_network_sequential(network, env_args, graphs_test, step_factor=1,
                               n_attempts=50, return_raw=False, return_history=False):
 
     if return_raw or return_history:
-        raise NotImplementedError("I've not got to this yet!  Used the batched test script (it's faster anyway).")
+        raise NotImplementedError(
+            "I've not got to this yet!  Used the batched test script (it's faster anyway).")
 
     results = []
 
@@ -385,7 +477,9 @@ def __test_network_sequential(network, env_args, graphs_test, step_factor=1,
 # LOADING GRAPHS
 ####################################################
 
+
 Graph = namedtuple('Graph', 'name n_vertices n_edges matrix bk_val bk_sol')
+
 
 def load_graph(graph_dir, graph_name):
 
@@ -397,27 +491,30 @@ def load_graph(graph_dir, graph_name):
     bk_val, bk_sol = None, None
 
     with open(inst_loc) as f:
-          for line in f:
-                arr = list(map(int, line.strip().split(' ')))
-                if len(arr) == 2: # contains the number of vertices and edges
-                    n_vertices, n_edges = arr
-                    matrix = np.zeros((n_vertices,n_vertices))
-                else:
-                    assert type(matrix)==np.ndarray, 'First line in file should define graph dimensions.'
-                    i, j, w = arr[0]-1, arr[1]-1, arr[2]
-                    matrix[ [i,j], [j,i] ] = w
+        for line in f:
+            arr = list(map(int, line.strip().split(' ')))
+            if len(arr) == 2:  # contains the number of vertices and edges
+                n_vertices, n_edges = arr
+                matrix = np.zeros((n_vertices, n_vertices))
+            else:
+                assert type(
+                    matrix) == np.ndarray, 'First line in file should define graph dimensions.'
+                i, j, w = arr[0]-1, arr[1]-1, arr[2]
+                matrix[[i, j], [j, i]] = w
 
     with open(val_loc) as f:
-        bk_val = float( f.readline() )
+        bk_val = float(f.readline())
 
     with open(sol_loc) as f:
         bk_sol_str = f.readline().strip()
-        bk_sol = np.array([int(x) for x in list(bk_sol_str)] + [ np.random.choice([0,1]) ]) # final spin is 'no-action'
+        bk_sol = np.array([int(x) for x in list(bk_sol_str)] +
+                          [np.random.choice([0, 1])])  # final spin is 'no-action'
 
     return Graph(graph_name, n_vertices, n_edges, matrix, bk_val, bk_sol)
 
+
 def load_graph_set(graph_save_loc):
-    graphs_test = pickle.load(open(graph_save_loc,'rb'))
+    graphs_test = pickle.load(open(graph_save_loc, 'rb'))
 
     def graph_to_array(g):
         if type(g) == nx.Graph:
@@ -427,22 +524,24 @@ def load_graph_set(graph_save_loc):
         return g
 
     graphs_test = [graph_to_array(g) for g in graphs_test]
-    print('{} target graphs loaded from {}'.format(len(graphs_test), graph_save_loc))
+    print('{} target graphs loaded from {}'.format(
+        len(graphs_test), graph_save_loc))
     return graphs_test
 
 ####################################################
 # FILE UTILS
 ####################################################
 
+
 def mk_dir(export_dir, quite=False):
     if not os.path.exists(export_dir):
-            try:
-                os.makedirs(export_dir)
-                print('created dir: ', export_dir)
-            except OSError as exc: # Guard against race condition
-                 if exc.errno != exc.errno.EEXIST:
-                    raise
-            except Exception:
-                pass
+        try:
+            os.makedirs(export_dir)
+            print('created dir: ', export_dir)
+        except OSError as exc:  # Guard against race condition
+            if exc.errno != exc.errno.EEXIST:
+                raise
+        except Exception:
+            pass
     else:
         print('dir already exists: ', export_dir)
