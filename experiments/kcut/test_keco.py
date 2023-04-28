@@ -32,15 +32,15 @@ def run(
         step_factor=None,
         n_attemps=50):
 
-    # n_spins_train = 2000
-    graph_spins = 200
-    n_sets = 2
+    train_spins = 100
+    graph_spins = 500
+    n_sets = 5
 
-    save_loc = f"kcut/eco/{n_sets}sets/benchmarks"
-    # network_save_loc = f"kcut/eco/{n_sets}sets/100spins/network/network_best.pth"
-    network_save_loc = f"experiments/pretrained_agent/networks/eco/network_best_BA_{graph_spins}spin.pth"
-    # graph_save_loc = f"_graphs/validation/BA_{graph_spins}spin_m4_100graphs.pkl"
-    graph_save_loc = f"_graphs/benchmarks/ising_125spin_graphs.pkl"
+    save_loc = f"kcut/eco/{n_sets}sets/500spins/test/500gspins"
+    network_save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/network/network_best.pth"
+    # network_save_loc = f"experiments/pretrained_agent/networks/eco/network_best_BA_{graph_spins}spin.pth"
+    graph_save_loc = f"_graphs/validation/BA_{graph_spins}spin_m4_100graphs.pkl"
+    # graph_save_loc = f"_graphs/benchmarks/gset_800spin_graphs.pkl"
 
     print("\n----- Running {} -----\n".format(os.path.basename(__file__)))
 
@@ -48,9 +48,9 @@ def run(
     # FOLDER LOCATIONS
     ####################################################
 
-    # print("save location :", save_loc)
-    # print("network params :", network_save_loc)
-    # mk_dir(save_loc)
+    print("save location :", save_loc)
+    print("network params location:", network_save_loc)
+    mk_dir(save_loc)
 
     ####################################################
     # NETWORK SETUP
@@ -120,11 +120,16 @@ def run(
     # results, results_raw, history = test_network(network, env_args, [graphs_test[0]], device, step_factor,
     #                                              return_raw=True, return_history=False, n_attempts=n_attemps,
     #                                              batched=batched, max_batch_size=max_batch_size)
-    results, results_raw = test_network(network, env_args, graphs_test, device, step_factor,
+
+    experiment_start_time = time.time()
+    results, results_raw = test_network(network, env_args, graphs_test[:1], device, step_factor,
                                         return_raw=True, return_history=False, n_attempts=n_attemps,
                                         batched=batched, max_batch_size=max_batch_size)
 
-    print("results", results)
+    print("Results", results)
+    print(
+        f"Recap: Networks spins={graph_spins}, Graph spins={graph_spins}, n_sets={n_sets}")
+    print("Total experiment time", time.time()-experiment_start_time)
 
     # print("vns results", results)
     results_fname = "results_" + \
