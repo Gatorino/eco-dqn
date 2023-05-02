@@ -2,6 +2,7 @@ import os
 import pickle
 import argparse
 import time
+import torch
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,11 +31,14 @@ parser.add_argument('-s', '--n_spins', type=int,
                     required=True, help='Number of vertices in the graphs.')
 parser.add_argument('-l', '--save_loc', type=str,
                     required=True, default="kcut/eco/2sets", help='Save path of the training.')
+parser.add_argument('-r', '--resume', type=str,
+                    required=True, default="False", help='Resumes training of the agent')
 args = parser.parse_args()
 print("==============saveloc")
 n_sets = args.n_sets
 n_spins = args.n_spins
 save_loc = args.save_loc
+resume_training = args.resume
 
 
 def run(save_loc=save_loc):
@@ -73,9 +77,11 @@ def run(save_loc=save_loc):
     ####
     # Pre-generated test graphs
     ####
-    graph_save_loc = f"_graphs/testing/BA_{n_spins}spin_m4_50graphs.pkl"
+    # graph_save_loc = f"_graphs/testing/BA_{n_spins}spin_m4_50graphs.pkl"
+    graph_save_loc = f"_graphs/testing/BA_500spin_m4_50graphs.pkl"
     graphs_test = load_graph_set(graph_save_loc)
     n_tests = len(graphs_test)
+    print("======================\nTest graphs of size 500")
 
     test_graph_generator = SetGraphGenerator(graphs_test, ordered=True)
 
@@ -113,13 +119,41 @@ def run(save_loc=save_loc):
     ####################################################
 
     # nb_steps = 2500000
-    nb_steps = 500000
+    nb_steps = 10000
 
-    def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1],
-                                  n_layers=3,
-                                  n_features=64,
-                                  n_hid_readout=[],
-                                  tied_weights=False)
+    if resume_training:
+
+        network_fn = MPNN
+        network_args = {
+            'n_layers': 3,
+            'n_features': 64,
+            'n_hid_readout': [],
+            'tied_weights': False
+        }
+        # network = network_fn(n_obs_in=train_envs[0].observation_space.shape[1],
+        #                      **network_args).to(device)
+        # network.load_state_dict(torch.load(
+        #     network_save_loc, map_location=device))
+
+        network = network_fn(n_obs_in=train_envs[0].observation_space.shape[1],
+                             **network_args)
+
+        network_save_loc = f"kcut/eco/{n_sets}sets/{n_spins}spins/network/network_best.pth"
+
+        network.load_state_dict(torch.load(
+            network_save_loc))
+
+        def network_fn(): return network
+
+        # self.network = network().to(self.device)
+        # self.target_network.load_state_dict(
+        #     self.network.state_dict())
+    else:
+        def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1],
+                                      n_layers=3,
+                                      n_features=64,
+                                      n_hid_readout=[],
+                                      tied_weights=False)
 
     agent = DQN(train_envs,
 
@@ -163,7 +197,8 @@ def run(save_loc=save_loc):
                 evaluate=True,
                 test_envs=test_envs,
                 test_episodes=n_tests,
-                test_frequency=10000,  # 10000
+                # test_frequency=10000,  # 10000
+                test_frequency=1,  # 10000
                 test_save_path=test_save_path,
                 test_metric=TestMetric.MAX_CUT,
 
@@ -186,6 +221,7 @@ def run(save_loc=save_loc):
     ############
     data = pickle.load(open(test_save_path, 'rb'))
     data = np.array(data)
+    print("Data", data)
 
     fig_fname = os.path.join(network_folder, "training_curve")
 
