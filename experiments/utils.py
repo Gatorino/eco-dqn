@@ -88,6 +88,10 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
 
     n_attempts = n_attempts if env_args["reversible_spins"] else 1
 
+    total_average_time = 0
+    total_env_time = 0
+    total_average_vns_time = 0
+
     for j, test_graph in enumerate(graphs_test):
 
         i_comp = 0
@@ -163,12 +167,14 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 batch_size, j), end="...")
 
             for i in range(batch_size):
+                # init_env_start = time.time()
                 env = deepcopy(test_env)
                 obs_batch[i] = env.reset()
                 test_envs[i] = env
                 # greedy_envs[i] = deepcopy(env)
                 vns_envs[i] = deepcopy(env)
                 init_spins_batch[i] = env.best_spins
+                # print("One env init time", time.time()-init_env_start)
             if return_history:
                 scores_history_batch.append(
                     [env.calculate_score() for env in test_envs])
@@ -242,14 +248,16 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             mean_predict_time = total_predict_time / n_steps
             print("Mean env step", mean_env_step_time)
             print("Total env step", total_env_step_time)
+            # total_env_time += total_env_step_time
             print("Mean predict time", mean_predict_time)
             print("Total predict time", total_predict_time)
-            print("Total history time", total_history_time)
+            # print("Total history time", total_history_time)
             print("Total conversion time", total_obs_conversion_time)
             t_total += (time.time() - t_start)
             i_batch += 1
             print("Finished agent testing batch {}.".format(i_batch))
             print("Network Time", t_total)
+            # total_average_time += t_total
 
             if env_args["reversible_spins"]:
 
@@ -266,7 +274,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                     # print("Time", current_time)
                     state = env.state[0, :env.n_spins]
                     solution = vns.vns(
-                        state, adjacency_matrix, n_sets=env.n_sets, k_max=25)
+                        state, adjacency_matrix, n_sets=env.n_sets, k_max=10)
                     cut = vns.compute_cut(solution, adjacency_matrix)
                     vns_cuts_batch.append(cut)
                     vns_spins_batch.append(solution)
@@ -292,7 +300,9 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 # print("done.")
             current_time = time.time()-t_start
             # print("Time", current_time)
-            print("VNS Solver time", time.time()-start_vns)
+            VNS_time = time.time()-start_vns
+            print("VNS Solver time", VNS_time)
+            # total_average_vns_time += VNS_time
 
             if return_history:
                 actions_history += actions_history_batch
@@ -346,11 +356,14 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         #                 t_total/(n_attempts)])
         print("Best cut", best_cut)
         print("mean cut", mean_cut)
+        # print("Network time", total_average_time)
+        # print("Average env time", total_env_time)
         # print("Greedy single cut", greedy_single_cut)
         print("VNS best cut", vns_cut)
         print("VNS mean cut", vns_mean_cut)
+        # print("Average VNS time", total_average_vns_time)
         results.append(
-            [best_cut, mean_cut, sol, vns_cut, vns_mean_cut, vns_spins])
+            [best_cut, mean_cut, t_total, total_env_step_time, sol, vns_cut, vns_mean_cut, VNS_time, vns_spins])
 
         # print("Greedy Random cut", greedy_random_cut)
         # print("Greedy random mean cut", greedy_random_mean_cut)
@@ -363,8 +376,8 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             history.append([np.array(actions_history).T.tolist(),
                             np.array(scores_history).T.tolist(),
                             np.array(rewards_history).T.tolist()])
-    results = pd.DataFrame(data=results, columns=["best_cut", "mean_cut", "sol",
-                           "vns_cut", "vns_mean_cut", "vns_spins"])
+    results = pd.DataFrame(data=results, columns=["best_cut", "mean_cut", "sol", "time", "env_time",
+                           "vns_cut", "vns_mean_cut", "vns_time", "vns_spins"])
 
     # results = pd.DataFrame(data=results, columns=["cut", "sol",
     #                                               "mean cut",
