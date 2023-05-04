@@ -8,3 +8,4 @@ losses.pkl
 *.pdf
 results*
 *.png
+*venv*
