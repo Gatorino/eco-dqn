@@ -31,7 +31,7 @@ parser.add_argument('-s', '--n_spins', type=int,
                     required=True, help='Number of vertices in the graphs.')
 parser.add_argument('-l', '--save_loc', type=str,
                     required=True, default="kcut/eco/2sets", help='Save path of the training.')
-parser.add_argument('-r', '--resume', type=str,
+parser.add_argument('-r', '--resume', type=bool,
                     required=True, default="False", help='Resumes training of the agent')
 args = parser.parse_args()
 print("==============saveloc")
@@ -39,7 +39,7 @@ n_sets = args.n_sets
 n_spins = args.n_spins
 save_loc = args.save_loc
 resume_training = args.resume
-
+resume_training = False
 
 def run(save_loc=save_loc):
 
@@ -77,8 +77,8 @@ def run(save_loc=save_loc):
     ####
     # Pre-generated test graphs
     ####
-    # graph_save_loc = f"_graphs/testing/BA_{n_spins}spin_m4_50graphs.pkl"
-    graph_save_loc = f"_graphs/testing/BA_500spin_m4_50graphs.pkl"
+    graph_save_loc = f"_graphs/testing/BA_{n_spins}spin_m4_50graphs.pkl"
+    #graph_save_loc = f"_graphs/testing/BA_500spin_m4_50graphs.pkl"
     graphs_test = load_graph_set(graph_save_loc)
     n_tests = len(graphs_test)
     print("======================\nTest graphs of size 500")
@@ -119,7 +119,7 @@ def run(save_loc=save_loc):
     ####################################################
 
     # nb_steps = 2500000
-    nb_steps = 10000
+    nb_steps = 500000
 
     if resume_training:
 
@@ -197,8 +197,8 @@ def run(save_loc=save_loc):
                 evaluate=True,
                 test_envs=test_envs,
                 test_episodes=n_tests,
-                # test_frequency=10000,  # 10000
-                test_frequency=1,  # 10000
+                test_frequency=100000,  # 10000
+                #test_frequency=100,  # 10000
                 test_save_path=test_save_path,
                 test_metric=TestMetric.MAX_CUT,
 

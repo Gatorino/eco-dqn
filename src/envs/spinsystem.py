@@ -93,7 +93,7 @@ class SpinSystemBase(ABC):
                  reward_signal=RewardSignal.DENSE,
                  extra_action=ExtraAction.PASS,
                  optimisation_target=OptimisationTarget.ENERGY,
-                 spin_basis=SpinBasis.SIGNED,
+                 spin_basis=SpinBasis.MULTIPLE,
                  norm_rewards=False,
                  memory_length=None,  # None means an infinite memory.
                  horizon_length=None,  # None means an infinite horizon.
@@ -126,7 +126,6 @@ class SpinSystemBase(ABC):
         assert observables[0] == Observable.SPIN_STATE, "First observable must be Observation.SPIN_STATE."
 
         self.observables = list(enumerate(observables))
-
         self.extra_action = extra_action
 
         if graph_generator != None:
@@ -281,8 +280,8 @@ class SpinSystemBase(ABC):
                 state[idx, :self.n_spins] = immediate_rewards_available / \
                     self.max_local_reward_available
             elif obs == Observable.LOCAL_DIVERSITY:
-                self.state[idx, :self.n_spins] = self.get_local_diversity(
-                    self.matrix, self.state[0, :], target_sets)
+                state[idx, :self.n_spins] = self.get_local_diversity(
+                    self.matrix, state[0, :], target_sets)
             elif obs == Observable.NUMBER_OF_GREEDY_ACTIONS_AVAILABLE:
                 state[idx, :self.n_spins] = 1 - \
                     np.sum(immediate_rewards_available <= 0) / self.n_spins
@@ -845,7 +844,7 @@ class SpinSystemUnbiased(SpinSystemBase):
             set_membership, adj_matrix, action, n_sets) for action in range(len(set_membership))]
 
     @staticmethod
-    @jit('float64[:](float64[:, :], int64[:], int64[:])', nopython=True)
+    @jit('float64[:](float64[:, :], float64[:], float64[:])', nopython=True)
     def get_local_diversity(adj_matrix, current_sets, target_sets):
         """
         The difference between the number of nodes in the target set and the current set

@@ -266,7 +266,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                     # print("Time", current_time)
                     state = env.state[0, :env.n_spins]
                     solution = vns.vns(
-                        state, adjacency_matrix, n_sets=env.n_sets, k_max=25)
+                        state, adjacency_matrix, n_sets=env.n_sets, k_max=1)
                     cut = vns.compute_cut(solution, adjacency_matrix)
                     vns_cuts_batch.append(cut)
                     vns_spins_batch.append(solution)
