@@ -36,7 +36,7 @@ class SpinSystemFactory(object):
             reward_signal=RewardSignal.DENSE,
             extra_action=ExtraAction.PASS,
             optimisation_target=OptimisationTarget.ENERGY,
-            spin_basis=SpinBasis.SIGNED,
+            spin_basis=SpinBasis.MULTIPLE,
             norm_rewards=False,
             memory_length=None,  # None means an infinite memory.
             horizon_length=None,  # None means an infinite horizon.
@@ -844,8 +844,8 @@ class SpinSystemUnbiased(SpinSystemBase):
             set_membership, adj_matrix, action, n_sets) for action in range(len(set_membership))]
 
     @staticmethod
-    @jit('float64[:](float64[:, :], float64[:], float64[:])', nopython=True)
-    def get_local_diversity(adj_matrix, current_sets, target_sets):
+    @jit('float64[:](float64[:, :], int64[:], int64[:])', nopython=True)
+    def get_local_diversity(adj_matrix, current_sets, target_sets, version=4):
         """
         The difference between the number of nodes in the target set and the current set
 
@@ -859,12 +859,36 @@ class SpinSystemUnbiased(SpinSystemBase):
         """
         n_spins = len(adj_matrix)
         local_diversity = np.zeros(n_spins)
-        for node in range(n_spins):
-            for idx, weight in enumerate(adj_matrix[node]):
-                if weight != 0 and target_sets[idx] == current_sets[node]:
-                    local_diversity[node] += 1
-                elif weight != 0 and target_sets[idx] == target_sets[node]:
-                    local_diversity[node] -= 1
+        # Target - current
+        if version == 4:
+            for node in range(n_spins):
+                for idx, weight in enumerate(adj_matrix[node]):
+                    if weight != 0 and target_sets[idx] == current_sets[node]:
+                        local_diversity[node] -= 1
+                    elif weight != 0 and target_sets[idx] == target_sets[node]:
+                        local_diversity[node] += 1
+        # Number of neighbors
+        elif version == 1:
+            for node in range(n_spins):
+                for idx, weight in enumerate(adj_matrix[node]):
+                    if weight != 0:
+                        local_diversity[node] += 1
+        # Number of neighbors from a different set
+        elif version == 2:
+            for node in range(n_spins):
+                for idx, weight in enumerate(adj_matrix[node]):
+                    if weight != 0 and target_sets[idx] == target_sets[node]:
+                        local_diversity[node] += 1
+        # Normalized number of neighbors from a different set
+        elif version == 3:
+            for node in range(n_spins):
+                neighbor_nodes = 0
+                for idx, weight in enumerate(adj_matrix[node]):
+                    if weight != 0:
+                        neighbor_nodes += 1
+                        if target_sets[idx] == target_sets[node]:
+                            local_diversity[node] += 1
+                local_diversity[node] /= neighbor_nodes
 
         return local_diversity
 
