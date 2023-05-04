@@ -45,18 +45,20 @@ class Observable(Enum):
     # Local observations that differ between nodes.
     SPIN_STATE = 1
     IMMEDIATE_REWARD_AVAILABLE = 2
-    TIME_SINCE_FLIP = 3
+    LOCAL_DIVERSITY = 3
+    TIME_SINCE_FLIP = 4
 
     # Global observations that are the same for all nodes.
-    EPISODE_TIME = 4
-    TERMINATION_IMMANENCY = 5
-    NUMBER_OF_GREEDY_ACTIONS_AVAILABLE = 6
-    DISTANCE_FROM_BEST_SCORE = 7
-    DISTANCE_FROM_BEST_STATE = 8
+    EPISODE_TIME = 5
+    TERMINATION_IMMANENCY = 6
+    NUMBER_OF_GREEDY_ACTIONS_AVAILABLE = 7
+    DISTANCE_FROM_BEST_SCORE = 8
+    DISTANCE_FROM_BEST_STATE = 9
 
 
 DEFAULT_OBSERVABLES = [Observable.SPIN_STATE,
                        Observable.IMMEDIATE_REWARD_AVAILABLE,
+                       Observable.LOCAL_DIVERSITY,
                        Observable.TIME_SINCE_FLIP,
                        Observable.DISTANCE_FROM_BEST_SCORE,
                        Observable.DISTANCE_FROM_BEST_STATE,

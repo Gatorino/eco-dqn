@@ -197,7 +197,7 @@ class SpinSystemBase(ABC):
         self._reset_graph_observables()
 
         spinsOne = np.array([1] * self.n_spins)
-        local_rewards_available = np.array(self.get_immeditate_rewards_avaialable(
+        local_rewards_available = np.array(self.get_immediate_rewards_available(
             spinsOne))[:, 0]
         local_rewards_available = local_rewards_available[np.nonzero(
             local_rewards_available)]
@@ -269,18 +269,23 @@ class SpinSystemBase(ABC):
             state[0, :] = self._format_spins_to_signed(spins)
 
         state = state.astype('float')
+        immediate_rewards_available = np.array(
+            self.get_immediate_rewards_available(spins=state[0, :self.n_spins]))
+        target_sets = immediate_rewards_available[:, 1]
+        immediate_rewards_available = immediate_rewards_available[:, 0]
 
         # If any observables other than "immediate energy available" require setting to values other than
         # 0 at this stage, we should use a 'for k,v in enumerate(self.observables)' loop.
         for idx, obs in self.observables:
             if obs == Observable.IMMEDIATE_REWARD_AVAILABLE:
-                state[idx, :self.n_spins] = np.array(self.get_immeditate_rewards_avaialable(
-                    spins=state[0, :self.n_spins]))[:, 0] / self.max_local_reward_available
+                state[idx, :self.n_spins] = immediate_rewards_available / \
+                    self.max_local_reward_available
+            elif obs == Observable.LOCAL_DIVERSITY:
+                self.state[idx, :self.n_spins] = self.get_local_diversity(
+                    self.matrix, self.state[0, :], target_sets)
             elif obs == Observable.NUMBER_OF_GREEDY_ACTIONS_AVAILABLE:
-                immeditate_rewards_avaialable = np.array(self.get_immeditate_rewards_avaialable(
-                    spins=state[0, :self.n_spins]))[:, 0]
                 state[idx, :self.n_spins] = 1 - \
-                    np.sum(immeditate_rewards_avaialable <= 0) / self.n_spins
+                    np.sum(immediate_rewards_available <= 0) / self.n_spins
         return state
 
     def _get_spins(self, basis=SpinBasis.SIGNED):
@@ -405,7 +410,10 @@ class SpinSystemBase(ABC):
         #############################################################################################
 
         self.state = new_state
-        immeditate_rewards_avaialable = self.get_immeditate_rewards_avaialable()
+        immeditate_rewards_available = np.array(
+            self.get_immediate_rewards_available())
+        target_sets = immeditate_rewards_available[:, 1]
+        immeditate_rewards_available = immeditate_rewards_available[:, 0]
 
         if self.score > self.best_obs_score:
             if self.reward_signal == RewardSignal.BLS:
@@ -430,7 +438,7 @@ class SpinSystemBase(ABC):
                 rew -= self.stag_punishment
 
         if self.basin_reward is not None:
-            if np.all(np.array(immeditate_rewards_avaialable)[:, 0] <= 0):
+            if np.all(immeditate_rewards_available <= 0):
                 # All immediate score changes are +ive <--> we are in a local minima.
                 if visiting_new_state:
                     # #####TEMP####
@@ -464,8 +472,11 @@ class SpinSystemBase(ABC):
 
             ### Local observables ###
             if observable == Observable.IMMEDIATE_REWARD_AVAILABLE:
-                self.state[idx, :self.n_spins] = np.array(immeditate_rewards_avaialable)[:, 0] / \
+                self.state[idx, :self.n_spins] = immeditate_rewards_available / \
                     self.max_local_reward_available
+            elif observable == Observable.LOCAL_DIVERSITY:
+                self.state[idx, :self.n_spins] = self.get_local_diversity(
+                    self.matrix, self.state[0, :], target_sets)
 
             elif observable == Observable.TIME_SINCE_FLIP:
                 self.state[idx, :] += (1. / self.max_steps)
@@ -487,7 +498,7 @@ class SpinSystemBase(ABC):
             elif observable == Observable.NUMBER_OF_GREEDY_ACTIONS_AVAILABLE:
                 self.state[idx, :] = 1 - \
                     np.sum(
-                        np.array(immeditate_rewards_avaialable)[:, 0] <= 0) / self.n_spins
+                        immeditate_rewards_available <= 0) / self.n_spins
 
             elif observable == Observable.DISTANCE_FROM_BEST_SCORE:
                 self.state[idx, :] = np.abs(
@@ -524,7 +535,7 @@ class SpinSystemBase(ABC):
         else:
             return np.vstack((state, self.matrix_obs))
 
-    def get_immeditate_rewards_avaialable(self, spins=None):
+    def get_immediate_rewards_available(self, spins=None):
         if spins is None:
             spins = self._get_spins()
 
@@ -738,6 +749,45 @@ class SpinSystemUnbiased(SpinSystemBase):
 
         return best_immediate_reward, target_set
 
+    # @staticmethod
+    # @jit('Tuple((float64, int64))(float64[:], float64[:, :], int64, int64)', nopython=True)
+    # # @jit(nopython=True)
+    # def _calculate_cut_change(set_membership, adj_matrix, action, n_sets):
+    #     """
+    #     Given a vertex (action), computes the possible changes between the current set and a newly random set.
+    #      Returns the reward correponding to a switch to this random set.
+
+    #     Args:
+    #         set_membership (np.ndarray): A list or array indicating the current set membership of each node.
+    #         adj_matrix (np.ndarray): The adjacency matrix of the input graph.
+    #         action (int): The index of the vertex being changed.
+    #         n_sets (int): The number of sets the graph is partitionned in.
+
+    #     Returns:
+    #         float, int: The change of cut value and the best target set.
+    #     """
+
+    #     immediate_reward = 0
+    #     weights = adj_matrix[action]
+    #     current_set = set_membership[action]
+    #     retry = True
+    #     while retry:
+    #         target_set = np.random.choice(n_sets)
+    #         if target_set != current_set:
+    #             retry = False
+    #     for vertex_idx, edge_weight in enumerate(weights):
+    #         # Don't change cut value if there is no edge.
+    #         if edge_weight == 0:
+    #             continue
+    #         # Decrease reward if there is an edge to the target set.
+    #         if set_membership[vertex_idx] == target_set:
+    #             immediate_reward -= edge_weight
+    #         # Increase reward if there is an edge to the original set.
+    #         elif set_membership[vertex_idx] == current_set:
+    #             immediate_reward += edge_weight
+
+    #     return immediate_reward, target_set
+
     @staticmethod
     @jit(float64(float64[:], float64[:, :]), nopython=True)
     def _calculate_energy_jit(spins, matrix):
@@ -793,6 +843,31 @@ class SpinSystemUnbiased(SpinSystemBase):
 
         return [SpinSystemUnbiased._calculate_cut_change(
             set_membership, adj_matrix, action, n_sets) for action in range(len(set_membership))]
+
+    @staticmethod
+    @jit('float64[:](float64[:, :], int64[:], int64[:])', nopython=True)
+    def get_local_diversity(adj_matrix, current_sets, target_sets):
+        """
+        The difference between the number of nodes in the target set and the current set
+
+        Args:
+            adj_matrix (np.ndarray): The adjacency matrix of the input graph.
+            current_sets (np.ndarray): An array of the current set of each node.
+            target_sets (np.ndarray): An array of the target set of each node. The target set provides the best change.
+
+        Returns:
+            np.ndarray: The local diversity of each node
+        """
+        n_spins = len(adj_matrix)
+        local_diversity = np.zeros(n_spins)
+        for node in range(n_spins):
+            for idx, weight in enumerate(adj_matrix[node]):
+                if weight != 0 and target_sets[idx] == current_sets[node]:
+                    local_diversity[node] += 1
+                elif weight != 0 and target_sets[idx] == target_sets[node]:
+                    local_diversity[node] -= 1
+
+        return local_diversity
 
 
 class SpinSystemBiased(SpinSystemBase):
