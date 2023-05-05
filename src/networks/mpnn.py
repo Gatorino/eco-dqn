@@ -38,16 +38,18 @@ class MPNN(nn.Module):
         return norm.float()
         
     def forward(self, obs):
+        #print("First", obs.shape)
         if obs.dim() == 2:
             obs = obs.unsqueeze(0)
-
+        #print("unsqueeze", obs.shape)
         obs.transpose_(-1, -2)
-
+        
         # Calculate features to be used in the MPNN
         node_features = obs[:, :, 0:self.n_obs_in]
-
+        #print("node features", node_features.shape)
         # Get graph adj matrix.
         adj = obs[:, :, self.n_obs_in:]
+        #print("adj", adj.shape)
         # adj_conns = (adj != 0).type(torch.FloatTensor).to(adj.device)
 
         norm = self.get_normalisation(adj)

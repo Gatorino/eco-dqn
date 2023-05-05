@@ -57,7 +57,7 @@ def run(save_loc=save_loc):
                 'reward_signal': RewardSignal.BLS,
                 'extra_action': ExtraAction.NONE,
                 'optimisation_target': OptimisationTarget.CUT,
-                'spin_basis': SpinBasis.BINARY,
+                'spin_basis': SpinBasis.MULTIPLE,
                 'norm_rewards': True,
                 'memory_length': None,
                 'horizon_length': None,
@@ -149,7 +149,7 @@ def run(save_loc=save_loc):
         # self.target_network.load_state_dict(
         #     self.network.state_dict())
     else:
-        def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1],
+        def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1] + n_sets-1,
                                       n_layers=3,
                                       n_features=64,
                                       n_hid_readout=[],
@@ -191,7 +191,7 @@ def run(save_loc=save_loc):
                 logging=False,
                 loss="mse",
 
-                save_network_frequency=100000,
+                save_network_frequency=100000, #100000,
                 network_save_path=network_save_path,
 
                 evaluate=True,

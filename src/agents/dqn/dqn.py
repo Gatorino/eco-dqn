@@ -250,6 +250,14 @@ class DQN:
 
     def get_random_replay_buffer(self):
         return random.sample(self.replay_buffers.items(), k=1)[0][1]
+    def state_to_one_hot(self, state):
+        new_values = np.zeros((self.env.n_sets, self.env.n_spins))
+        former_values = state[0, :].astype(int)
+        for i in range(self.env.n_spins):
+            new_values[former_values[i], i] = 1
+        state = np.vstack((new_values, state[1:, :]))    
+
+        return state
 
     def learn(self, timesteps, verbose=False):
 
@@ -257,7 +265,8 @@ class DQN:
             logger = Logger()
 
         # Initialise the state
-        state = torch.as_tensor(self.env.reset())
+        state = self.state_to_one_hot(self.env.reset())
+        state = torch.as_tensor(state)
         score = 0
         losses_eps = []
         t1 = time.time()
@@ -266,9 +275,12 @@ class DQN:
         losses = []
 
         is_training_ready = False
-
+        #action_time = 0
+        #step_time = 0
+        #buffer_time = 0
+        #astensor_time = 0
+        #update_time = 0
         for timestep in range(timesteps):
-
             if not is_training_ready:
                 if all([len(rb)>=self.replay_start_size for rb in self.replay_buffers.values()]):
                     print('\nAll buffers have {} transitions stored - training is starting!\n'.format(
@@ -276,7 +288,9 @@ class DQN:
                     is_training_ready=True
 
             # Choose action
+            #tt = time.time()
             action = self.act(state.to(self.device).float(), is_training_ready=is_training_ready)
+            #action_time += time.time()-tt
 
             # Update epsilon
             if self.update_exploration:
@@ -286,19 +300,26 @@ class DQN:
             if self.update_learning_rate:
                 self.update_lr(timestep)
 
+            #tt = time.time()
             # Perform action in environment
             state_next, reward, done, _ = self.env.step(action)
-
+            #step_time += time.time()-tt
+            
             score += reward
-
+                
+            #tt = time.time()
             # Store transition in replay buffer
             action = torch.as_tensor([action], dtype=torch.long)
             reward = torch.as_tensor([reward], dtype=torch.float)
+            state_next = self.state_to_one_hot(state_next)
             state_next = torch.as_tensor(state_next)
 
             done = torch.as_tensor([done], dtype=torch.float)
+            #astensor_time += time.time()-tt
 
+            #tt= time.time()
             self.replay_buffer.add(state, action, reward, state_next, done)
+            #buffer_time += time.time() - tt
 
             if done:
                 # Reinitialise the state
@@ -310,12 +331,12 @@ class DQN:
                          np.round(score,3),
                          loss_str,
                          round(time.time() - t1, 3)))
-
+                    #print(f"action {action_time}, astensor {astensor_time}, update {update_time}, step {step_time}, buffer {buffer_time}")
                 if self.logging:
                     logger.add_scalar('Episode_score', score, timestep)
                 self.env, self.acting_in_reversible_spin_env = self.get_random_env()
                 self.replay_buffer = self.get_replay_buffer_for_env(self.env)
-                state = torch.as_tensor(self.env.reset())
+                state = torch.as_tensor(self.state_to_one_hot(self.env.reset()))
                 score = 0
                 losses_eps = []
                 t1 = time.time()
@@ -324,7 +345,7 @@ class DQN:
                 state = state_next
 
             if is_training_ready:
-
+                #tt = time.time()
                 # Update the main network
                 if timestep % self.update_frequency == 0:
 
@@ -338,7 +359,7 @@ class DQN:
 
                     if self.logging:
                         logger.add_scalar('Loss', loss, timestep)
-
+                    #update_time += time.time() -tt
                 # Periodically update target network
                 if timestep % self.update_target_frequency == 0:
                     self.target_network.load_state_dict(self.network.state_dict())
@@ -529,7 +550,7 @@ class DQN:
             for i, env in enumerate(test_envs):
                 if env is None and i_test < self.test_episodes:
                     test_env, testing_in_reversible_spin_env = self.get_random_env(self.test_envs)
-                    obs = test_env.reset()
+                    obs = self.state_to_one_hot(test_env.reset())
                     test_env = deepcopy(test_env)
 
                     test_envs[i] = test_env
@@ -547,7 +568,7 @@ class DQN:
 
                 if env is not None:
                     obs, rew, done, info = env.step(action)
-
+                    obs = self.state_to_one_hot(obs)
                     if self.test_metric == TestMetric.CUMULATIVE_REWARD:
                         batch_scores[i] += rew
 
