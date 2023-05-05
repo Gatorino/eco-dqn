@@ -77,7 +77,7 @@ def run(
                 'reward_signal': RewardSignal.BLS,
                 'extra_action': ExtraAction.NONE,
                 'optimisation_target': OptimisationTarget.CUT,
-                'spin_basis': SpinBasis.BINARY,
+                'spin_basis': SpinBasis.MULTIPLE,
                 'norm_rewards': True,
                 'memory_length': None,
                 'horizon_length': None,

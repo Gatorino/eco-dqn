@@ -374,6 +374,10 @@ class SpinSystemBase(ABC):
         ############################################################
         # 1. Performs the action and calculates the score change. #
         ############################################################
+        immeditate_rewards_available = np.array(
+            self.get_immediate_rewards_available())
+        target_sets = immeditate_rewards_available[:, 1]
+        immeditate_rewards_available = immeditate_rewards_available[:, 0]
         if action == self.n_spins:
             if self.extra_action == ExtraAction.PASS:
                 delta_score = 0
@@ -392,8 +396,10 @@ class SpinSystemBase(ABC):
                 delta_score, target_set = self._calculate_score_change(
                     new_state[0, :self.n_spins], self.matrix, self.bias, action)
             else:
-                delta_score, target_set = self._calculate_score_change(
-                    new_state[0, :self.n_spins], self.matrix, action)
+                delta_score = immeditate_rewards_available[action]
+                target_set = target_sets[action]
+                #delta_score, target_set = self._calculate_score_change(
+                #    new_state[0, :self.n_spins], self.matrix, action)
             self.score += delta_score
             new_state[0, action] = target_set
 
@@ -409,10 +415,10 @@ class SpinSystemBase(ABC):
         #############################################################################################
 
         self.state = new_state
-        immeditate_rewards_available = np.array(
-            self.get_immediate_rewards_available())
-        target_sets = immeditate_rewards_available[:, 1]
-        immeditate_rewards_available = immeditate_rewards_available[:, 0]
+        #immeditate_rewards_available = np.array(
+        #    self.get_immediate_rewards_available())
+        #target_sets = immeditate_rewards_available[:, 1]
+        #immeditate_rewards_available = immeditate_rewards_available[:, 0]
 
         if self.score > self.best_obs_score:
             if self.reward_signal == RewardSignal.BLS:
