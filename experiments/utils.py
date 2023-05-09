@@ -57,6 +57,15 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         if env_args['spin_basis'] == SpinBasis.SIGNED:
             allowed_action_state = 1
 
+    def state_to_one_hot(state, n_spins):
+        new_values = np.zeros((env_args['n_sets'], n_spins))
+        former_values = state[0, :].astype(int)
+        for i in range(n_spins):
+            new_values[former_values[i], i] = 1
+        state = np.vstack((new_values, state[1:, :]))
+
+        return state
+
     def predict(states):
 
         qs = network(states)
@@ -164,6 +173,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
 
             for i in range(batch_size):
                 env = deepcopy(test_env)
+                # obs_batch[i] = state_to_one_hot(env.reset(), n_spins)
                 obs_batch[i] = env.reset()
                 test_envs[i] = env
                 # greedy_envs[i] = deepcopy(env)

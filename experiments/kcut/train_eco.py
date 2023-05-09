@@ -41,6 +41,7 @@ save_loc = args.save_loc
 resume_training = args.resume
 resume_training = False
 
+
 def run(save_loc=save_loc):
 
     print("\n----- Running {} -----\n".format(os.path.basename(__file__)))
@@ -78,7 +79,7 @@ def run(save_loc=save_loc):
     # Pre-generated test graphs
     ####
     graph_save_loc = f"_graphs/testing/BA_{n_spins}spin_m4_50graphs.pkl"
-    #graph_save_loc = f"_graphs/testing/BA_500spin_m4_50graphs.pkl"
+    # graph_save_loc = f"_graphs/testing/BA_500spin_m4_50graphs.pkl"
     graphs_test = load_graph_set(graph_save_loc)
     n_tests = len(graphs_test)
     print("======================\nTest graphs of size 500")
@@ -149,7 +150,8 @@ def run(save_loc=save_loc):
         # self.target_network.load_state_dict(
         #     self.network.state_dict())
     else:
-        def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1] + n_sets-1,
+        # def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1] + n_sets-1,
+        def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1],
                                       n_layers=3,
                                       n_features=64,
                                       n_hid_readout=[],
@@ -191,14 +193,14 @@ def run(save_loc=save_loc):
                 logging=False,
                 loss="mse",
 
-                save_network_frequency=100000, #100000,
+                save_network_frequency=100000,  # 100000,
                 network_save_path=network_save_path,
 
                 evaluate=True,
                 test_envs=test_envs,
                 test_episodes=n_tests,
                 test_frequency=100000,  # 10000
-                #test_frequency=100,  # 10000
+                # test_frequency=100,  # 10000
                 test_save_path=test_save_path,
                 test_metric=TestMetric.MAX_CUT,
 
