@@ -13,6 +13,7 @@ from src.agents.dqn.dqn import DQN
 from src.agents.dqn.utils import TestMetric
 from src.envs.utils import (SetGraphGenerator,
                             RandomBarabasiAlbertGraphGenerator,
+                            RandomErdosRenyiGraphGenerator,
                             EdgeType, RewardSignal, ExtraAction,
                             OptimisationTarget, SpinBasis,
                             DEFAULT_OBSERVABLES)
@@ -72,17 +73,18 @@ def run(save_loc=save_loc):
 
     n_spins_train = n_spins
 
-    train_graph_generator = RandomBarabasiAlbertGraphGenerator(
-        n_spins=n_spins_train, m_insertion_edges=4, edge_type=EdgeType.DISCRETE)
+    train_graph_generator = RandomErdosRenyiGraphGenerator(
+        n_spins=n_spins_train, p_connection=0.1, edge_type=EdgeType.UNIFORM)
+    # n_spins=n_spins_train, m_insertion_edges=4, edge_type=EdgeType.DISCRETE)
 
     ####
     # Pre-generated test graphs
     ####
-    graph_save_loc = f"_graphs/testing/BA_{n_spins}spin_m4_50graphs.pkl"
+    graph_save_loc = f"_graphs/testing/ER_{n_spins}spin_p15_50graphs.pkl"
     # graph_save_loc = f"_graphs/testing/BA_500spin_m4_50graphs.pkl"
     graphs_test = load_graph_set(graph_save_loc)
     n_tests = len(graphs_test)
-    print("======================\nTest graphs of size 500")
+    print(f"======================\nTest graphs of size {n_spins}")
 
     test_graph_generator = SetGraphGenerator(graphs_test, ordered=True)
 
@@ -105,8 +107,8 @@ def run(save_loc=save_loc):
     # SET UP FOLDERS FOR SAVING DATA
     ####################################################
 
-    data_folder = os.path.join(save_loc, 'data')
-    network_folder = os.path.join(save_loc, 'network')
+    data_folder = os.path.join(save_loc, 'ER/data')
+    network_folder = os.path.join(save_loc, 'ER/network')
 
     mk_dir(data_folder)
     mk_dir(network_folder)
@@ -120,7 +122,7 @@ def run(save_loc=save_loc):
     ####################################################
 
     # nb_steps = 2500000
-    nb_steps = 500000
+    nb_steps = 1000000
 
     if resume_training:
 
@@ -139,7 +141,7 @@ def run(save_loc=save_loc):
         network = network_fn(n_obs_in=train_envs[0].observation_space.shape[1],
                              **network_args)
 
-        network_save_loc = f"kcut/eco/{n_sets}sets/{n_spins}spins/network/network_best.pth"
+        network_save_loc = f"kcut/eco/{n_sets}sets/{n_spins}spins/ER/network/network_best.pth"
 
         network.load_state_dict(torch.load(
             network_save_loc))
