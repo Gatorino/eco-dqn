@@ -282,6 +282,8 @@ class SpinSystemBase(ABC):
             elif obs == Observable.LOCAL_DIVERSITY:
                 state[idx, :self.n_spins] = self.get_local_diversity(
                     self.matrix, state[0, :], target_sets)
+            elif obs == Observable.GLOBAL_DIVERSITY:
+                state[idx, :self.n_spins] = self.get_global_diversity(state[0, :])
             elif obs == Observable.NUMBER_OF_GREEDY_ACTIONS_AVAILABLE:
                 state[idx, :self.n_spins] = 1 - \
                     np.sum(immediate_rewards_available <= 0) / self.n_spins
@@ -482,7 +484,8 @@ class SpinSystemBase(ABC):
             elif observable == Observable.LOCAL_DIVERSITY:
                 self.state[idx, :self.n_spins] = self.get_local_diversity(
                     self.matrix, self.state[0, :], target_sets)
-
+            elif observable == Observable.GLOBAL_DIVERSITY:
+                self.state[idx, :self.n_spins] = self.get_global_diversity(self.state[0, :])
             elif observable == Observable.TIME_SINCE_FLIP:
                 self.state[idx, :] += (1. / self.max_steps)
                 if randomised_spins:
@@ -848,6 +851,31 @@ class SpinSystemUnbiased(SpinSystemBase):
 
         return [SpinSystemUnbiased._calculate_cut_change(
             set_membership, adj_matrix, action, n_sets) for action in range(len(set_membership))]
+
+
+    @staticmethod
+    @jit('float64[:](int64[:])', nopython=True)
+    def get_global_diversity(current_sets):
+        """
+        Returns the normalized number of nodes of the same set
+
+        Args:
+            current_sets (np.ndarray): The set membership of each node
+        """
+        n_spins = len(current_sets)
+        global_diversity = np.zeros(n_spins)
+        diversity_dict = {}
+        for set_membership in current_sets:
+            if set_membership not in diversity_dict:
+                diversity_dict[set_membership] = 1
+            else:
+                diversity_dict[set_membership] += 1
+        for k,v in diversity_dict.items():
+            diversity_dict[k] = v/n_spins
+        for idx,set_membership in enumerate(len(current_sets)):
+            global_diversity[idx] = diversity_dict[set_membership]
+
+        return global_diversity
 
     @staticmethod
     @jit('float64[:](float64[:, :], int64[:], int64[:])', nopython=True)

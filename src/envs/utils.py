@@ -50,15 +50,17 @@ class Observable(Enum):
 
     # Global observations that are the same for all nodes.
     EPISODE_TIME = 5
-    TERMINATION_IMMANENCY = 6
-    NUMBER_OF_GREEDY_ACTIONS_AVAILABLE = 7
-    DISTANCE_FROM_BEST_SCORE = 8
-    DISTANCE_FROM_BEST_STATE = 9
+    GLOBAL_DIVERSITY = 6
+    TERMINATION_IMMANENCY = 7
+    NUMBER_OF_GREEDY_ACTIONS_AVAILABLE = 8
+    DISTANCE_FROM_BEST_SCORE = 9
+    DISTANCE_FROM_BEST_STATE = 10
 
 
 DEFAULT_OBSERVABLES = [Observable.SPIN_STATE,
                        Observable.IMMEDIATE_REWARD_AVAILABLE,
                        Observable.LOCAL_DIVERSITY,
+                       Observable.GLOBAL_DIVERSITY,
                        Observable.TIME_SINCE_FLIP,
                        Observable.DISTANCE_FROM_BEST_SCORE,
                        Observable.DISTANCE_FROM_BEST_STATE,
