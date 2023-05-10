@@ -82,7 +82,7 @@ def run(save_loc=save_loc):
     # graph_save_loc = f"_graphs/testing/BA_500spin_m4_50graphs.pkl"
     graphs_test = load_graph_set(graph_save_loc)
     n_tests = len(graphs_test)
-    print("======================\nTest graphs of size 500")
+    print(f"======================\nTest graphs of size {n_spins}")
 
     test_graph_generator = SetGraphGenerator(graphs_test, ordered=True)
 
@@ -150,8 +150,8 @@ def run(save_loc=save_loc):
         # self.target_network.load_state_dict(
         #     self.network.state_dict())
     else:
-        # def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1] + n_sets-1,
-        def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1],
+        def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1] + n_sets-1,
+        # def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1],
                                       n_layers=3,
                                       n_features=64,
                                       n_hid_readout=[],
