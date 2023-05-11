@@ -12,6 +12,7 @@ from experiments.utils import load_graph_set, mk_dir
 from src.agents.dqn.dqn import DQN
 from src.agents.dqn.utils import TestMetric
 from src.envs.utils import (SetGraphGenerator,
+                            RandomErdosRenyiGraphGenerator,
                             RandomBarabasiAlbertGraphGenerator,
                             EdgeType, RewardSignal, ExtraAction,
                             OptimisationTarget, SpinBasis,
@@ -72,13 +73,13 @@ def run(save_loc=save_loc):
 
     n_spins_train = n_spins
 
-    train_graph_generator = RandomBarabasiAlbertGraphGenerator(
-        n_spins=n_spins_train, m_insertion_edges=4, edge_type=EdgeType.DISCRETE)
+    train_graph_generator = RandomErdosRenyiGraphGenerator(
+        n_spins=n_spins_train, p_connection=0.1, edge_type=EdgeType.UNIFORM)
 
     ####
     # Pre-generated test graphs
     ####
-    graph_save_loc = f"_graphs/testing/BA_{n_spins}spin_m4_50graphs.pkl"
+    graph_save_loc = f"_graphs/testing/ER_{n_spins}spin_p15_50graphs.pkl"
     # graph_save_loc = f"_graphs/testing/BA_500spin_m4_50graphs.pkl"
     graphs_test = load_graph_set(graph_save_loc)
     n_tests = len(graphs_test)
@@ -120,7 +121,7 @@ def run(save_loc=save_loc):
     ####################################################
 
     # nb_steps = 2500000
-    nb_steps = 500000
+    nb_steps = 1000000
 
     if resume_training:
 

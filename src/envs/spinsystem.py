@@ -5,6 +5,7 @@ import time
 
 import numpy as np
 import torch.multiprocessing as mp
+import numba
 from numba import jit, float64, int64
 
 from src.envs.utils import (EdgeType,
@@ -854,7 +855,8 @@ class SpinSystemUnbiased(SpinSystemBase):
 
 
     @staticmethod
-    @jit('float64[:](int64[:])', nopython=True)
+    #@jit('float64[:](int64[:])', nopython=True)
+    @jit(nopython=True)
     def get_global_diversity(current_sets):
         """
         Returns the normalized number of nodes of the same set
@@ -867,18 +869,19 @@ class SpinSystemUnbiased(SpinSystemBase):
         diversity_dict = {}
         for set_membership in current_sets:
             if set_membership not in diversity_dict:
-                diversity_dict[set_membership] = 1
+                diversity_dict[set_membership] = 1.0
             else:
-                diversity_dict[set_membership] += 1
+                diversity_dict[set_membership] += 1.0
         for k,v in diversity_dict.items():
             diversity_dict[k] = v/n_spins
-        for idx,set_membership in enumerate(len(current_sets)):
+        for idx,set_membership in enumerate(current_sets):
             global_diversity[idx] = diversity_dict[set_membership]
 
         return global_diversity
 
     @staticmethod
-    @jit('float64[:](float64[:, :], int64[:], int64[:])', nopython=True)
+    #@jit('float64[:](float64[:, :], int64[:], int64[:])', nopython=True)
+    @jit(nopython=True)
     def get_local_diversity(adj_matrix, current_sets, target_sets, version=4):
         """
         The difference between the number of nodes in the target set and the current set
