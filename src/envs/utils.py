@@ -1,4 +1,6 @@
 import random
+import os
+import pickle
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -89,6 +91,24 @@ class GraphGenerator(ABC):
 ###################
 # Unbiased graphs #
 ###################
+
+
+class G1GraphGenerator(GraphGenerator):
+    def __init__(self, n_spins, edge_type, biased=False):
+        super().__init__(n_spins, edge_type, False)
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        print("Initial path", current_path)
+        path = os.path.join(
+            current_path, "../../_graphs/benchmarks/gset_800spin_graphs.pkl")
+        with open(path, 'rb') as file:
+            solutions = pickle.load(file)
+            print("Number of graphs:", len(solutions))
+            first_graph = solutions[0]
+            print(first_graph.shape)
+            self.matrix = first_graph
+
+    def get(self, with_padding=False):
+        return self.matrix
 
 
 class RandomGraphGenerator(GraphGenerator):

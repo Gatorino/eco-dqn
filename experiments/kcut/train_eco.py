@@ -14,6 +14,7 @@ from src.agents.dqn.utils import TestMetric
 from src.envs.utils import (SetGraphGenerator,
                             RandomBarabasiAlbertGraphGenerator,
                             RandomErdosRenyiGraphGenerator,
+                            G1GraphGenerator,
                             EdgeType, RewardSignal, ExtraAction,
                             OptimisationTarget, SpinBasis,
                             DEFAULT_OBSERVABLES)
@@ -73,17 +74,22 @@ def run(save_loc=save_loc):
 
     n_spins_train = n_spins
 
-    train_graph_generator = RandomErdosRenyiGraphGenerator(
-        n_spins=n_spins_train, p_connection=0.1, edge_type=EdgeType.UNIFORM)
+    train_graph_generator = G1GraphGenerator(
+        n_spins=n_spins_train, edge_type=EdgeType.UNIFORM)
+    # train_graph_generator = RandomErdosRenyiGraphGenerator(
+    #     n_spins=n_spins_train, p_connection=0.1, edge_type=EdgeType.UNIFORM)
     # n_spins=n_spins_train, m_insertion_edges=4, edge_type=EdgeType.DISCRETE)
 
     ####
     # Pre-generated test graphs
     ####
-    graph_save_loc = f"_graphs/testing/ER_{n_spins}spin_p15_50graphs.pkl"
+    graph_save_loc = "_graphs/benchmarks/gset_800spin_graphs.pkl"
+    # graph_save_loc = f"_graphs/testing/ER_{n_spins}spin_p15_50graphs.pkl"
     # graph_save_loc = f"_graphs/testing/BA_500spin_m4_50graphs.pkl"
     graphs_test = load_graph_set(graph_save_loc)
+    graphs_test = [graphs_test[0]]
     n_tests = len(graphs_test)
+    print("Number of test graphs:", n_tests)
     print(f"======================\nTest graphs of size {n_spins}")
 
     test_graph_generator = SetGraphGenerator(graphs_test, ordered=True)
@@ -122,7 +128,7 @@ def run(save_loc=save_loc):
     ####################################################
 
     # nb_steps = 2500000
-    nb_steps = 1000000
+    nb_steps = 500000
 
     if resume_training:
 
@@ -195,13 +201,13 @@ def run(save_loc=save_loc):
                 logging=False,
                 loss="mse",
 
-                save_network_frequency=100000,  # 100000,
+                save_network_frequency=50000,  # 100000,
                 network_save_path=network_save_path,
 
                 evaluate=True,
                 test_envs=test_envs,
                 test_episodes=n_tests,
-                test_frequency=100000,  # 10000
+                test_frequency=50000,  # 10000
                 # test_frequency=100,  # 10000
                 test_save_path=test_save_path,
                 test_metric=TestMetric.MAX_CUT,
