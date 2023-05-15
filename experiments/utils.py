@@ -170,11 +170,13 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
 
             print("Preparing batch of {} environments for graph {}.".format(
                 batch_size, j), end="...")
-
+            np.random.seed(1)
             for i in range(batch_size):
                 env = deepcopy(test_env)
                 # obs_batch[i] = state_to_one_hot(env.reset(), n_spins)
-                obs_batch[i] = env.reset()
+                spins = np.array(np.random.randint(env.n_sets, size=n_spins)) 
+                print(f"Testing seed {i}", np.random.randint(100))
+                obs_batch[i] = env.reset(spins)
                 test_envs[i] = env
                 # greedy_envs[i] = deepcopy(env)
                 vns_envs[i] = deepcopy(env)

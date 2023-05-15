@@ -32,14 +32,15 @@ def run(
         step_factor=None,
         n_attemps=10):
 
-    train_spins = 500
-    graph_spins = 500
+    train_spins = 800
+    graph_spins = 800
     n_sets = 3
 
-    save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/benchmarks/gset800"
-    #network_save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/network/network_best.pth"
+    #save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/benchmarks/gset800"
+    save_loc = f"kcut/g1/batchsize32/ER/benchmark/gset800"
+    network_save_loc = f"kcut/g1/batchsize32/ER/network/network_best.pth"
     #network_save_loc = f"experiments/pretrained_agent/networks/eco/network_best_BA_{graph_spins}spin.pth"
-    network_save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/localDiversity/network/network_best.pth"
+    #network_save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/localDiversity/network/network_best.pth"
     # graph_save_loc = f"_graphs/validation/BA_{graph_spins}spin_m4_100graphs.pkl"
     graph_save_loc = f"_graphs/benchmarks/gset_800spin_graphs.pkl"
 
@@ -122,7 +123,7 @@ def run(
     #                                              batched=batched, max_batch_size=max_batch_size)
 
     experiment_start_time = time.time()
-    results, results_raw = test_network(network, env_args, graphs_test[:10], device, step_factor,
+    results, results_raw = test_network(network, env_args, graphs_test[:1], device, step_factor,
                                         return_raw=True, return_history=False, n_attempts=n_attemps,
                                         batched=batched, max_batch_size=max_batch_size)
 
