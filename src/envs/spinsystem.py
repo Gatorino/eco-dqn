@@ -270,6 +270,7 @@ class SpinSystemBase(ABC):
         state = state.astype('float')
         immediate_rewards_available = np.array(
             self.get_immediate_rewards_available(spins=state[0, :self.n_spins]))
+        improving_sets = immediate_rewards_available[:, 2]
         target_sets = immediate_rewards_available[:, 1]
         immediate_rewards_available = immediate_rewards_available[:, 0]
 
@@ -282,6 +283,8 @@ class SpinSystemBase(ABC):
             elif obs == Observable.LOCAL_DIVERSITY:
                 state[idx, :self.n_spins] = self.get_local_diversity(
                     self.matrix, state[0, :], target_sets)
+            elif obs == Observable.IMPROVING_SETS:
+                state[idx, :self.n_spins] = improving_sets
             elif obs == Observable.NUMBER_OF_GREEDY_ACTIONS_AVAILABLE:
                 state[idx, :self.n_spins] = 1 - \
                     np.sum(immediate_rewards_available <= 0) / self.n_spins
@@ -376,6 +379,7 @@ class SpinSystemBase(ABC):
         ############################################################
         immeditate_rewards_available = np.array(
             self.get_immediate_rewards_available())
+        improving_sets = immeditate_rewards_available[:, 2]
         target_sets = immeditate_rewards_available[:, 1]
         immeditate_rewards_available = immeditate_rewards_available[:, 0]
         if action == self.n_spins:
@@ -482,7 +486,8 @@ class SpinSystemBase(ABC):
             elif observable == Observable.LOCAL_DIVERSITY:
                 self.state[idx, :self.n_spins] = self.get_local_diversity(
                     self.matrix, self.state[0, :], target_sets)
-
+            elif observable == Observable.IMPROVING_SETS:
+                self.state[idx, :self.n_spins] = improving_sets
             elif observable == Observable.TIME_SINCE_FLIP:
                 self.state[idx, :] += (1. / self.max_steps)
                 if randomised_spins:
@@ -732,6 +737,7 @@ class SpinSystemUnbiased(SpinSystemBase):
         best_immediate_reward = np.NINF
         # Will be updated in the loop. The set that gets the best reward for the current action.
         target_set = 0
+        improving_sets = 0
         weights = adj_matrix[action]
 
         # Iterate through the potential new sets
@@ -747,12 +753,14 @@ class SpinSystemUnbiased(SpinSystemBase):
                     immediate_reward -= edge_weight
                 elif set_membership[vertex_idx] == set_membership[action]:
                     immediate_reward += edge_weight
+            if immediate_reward > 0:
+                improving_sets += 1
             # Update best reward
             if immediate_reward > best_immediate_reward:
                 best_immediate_reward = immediate_reward
                 target_set = set_label
 
-        return best_immediate_reward, target_set
+        return best_immediate_reward, target_set, improving_sets
 
     # @staticmethod
     # @jit('Tuple((float64, int64))(float64[:], float64[:, :], int64, int64)', nopython=True)
@@ -850,7 +858,7 @@ class SpinSystemUnbiased(SpinSystemBase):
             set_membership, adj_matrix, action, n_sets) for action in range(len(set_membership))]
 
     @staticmethod
-    @jit('float64[:](float64[:, :], int64[:], int64[:])', nopython=True)
+    @jit(nopython=True)
     def get_local_diversity(adj_matrix, current_sets, target_sets, version=4):
         """
         The difference between the number of nodes in the target set and the current set
