@@ -188,7 +188,7 @@ def run(save_loc=save_loc):
                 final_learning_rate_step=200000,
 
                 update_frequency=32,  # 1
-                minibatch_size=64,  # 128
+                minibatch_size=32,  # 128
                 max_grad_norm=None,
                 weight_decay=0,
 
@@ -207,7 +207,7 @@ def run(save_loc=save_loc):
                 evaluate=True,
                 test_envs=test_envs,
                 test_episodes=n_tests,
-                test_frequency=50000,  # 10000
+                test_frequency=25000,  # 10000
                 # test_frequency=100,  # 10000
                 test_save_path=test_save_path,
                 test_metric=TestMetric.MAX_CUT,

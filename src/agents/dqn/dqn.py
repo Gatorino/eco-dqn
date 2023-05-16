@@ -589,7 +589,10 @@ class DQN:
 
             obs_batch = []
 
+            
             i = 0
+            if isinstance(actions, int):
+                actions = np.array(actions)
             for env, action in zip(test_envs, actions):
 
                 if env is not None:

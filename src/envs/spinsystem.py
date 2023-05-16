@@ -484,8 +484,8 @@ class SpinSystemBase(ABC):
             elif observable == Observable.LOCAL_DIVERSITY:
                 self.state[idx, :self.n_spins] = self.get_local_diversity(
                     self.matrix, self.state[0, :], target_sets)
-            elif observable == Observable.REWARD_DIVERSITY:
-                self.state[idx, :self.n_spins] = self.get_reward_diversity(self.matrix, immeditate_rewards_available)
+            elif observable == Observable.REWARD_DENSITY:
+                self.state[idx, :self.n_spins] = self.get_reward_density(self.matrix, immeditate_rewards_available)
             elif observable == Observable.TIME_SINCE_FLIP:
                 self.state[idx, :] += (1. / self.max_steps)
                 if randomised_spins:
@@ -994,3 +994,4 @@ class SpinSystemBiased(SpinSystemBase):
     def _get_immeditate_cuts_avaialable_jit(spins, matrix, bias):
         raise NotImplementedError(
             "MaxCut not defined/implemented for biased SpinSystems.")
+
