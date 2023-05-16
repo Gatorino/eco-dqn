@@ -282,6 +282,8 @@ class SpinSystemBase(ABC):
             elif obs == Observable.LOCAL_DIVERSITY:
                 state[idx, :self.n_spins] = self.get_local_diversity(
                     self.matrix, state[0, :], target_sets)
+            elif obs == Observable.REWARD_DENSITY:
+                state[idx, :self.n_spins] = self.get_reward_density(self.matrix, immediate_rewards_available)
             elif obs == Observable.NUMBER_OF_GREEDY_ACTIONS_AVAILABLE:
                 state[idx, :self.n_spins] = 1 - \
                     np.sum(immediate_rewards_available <= 0) / self.n_spins
@@ -482,7 +484,8 @@ class SpinSystemBase(ABC):
             elif observable == Observable.LOCAL_DIVERSITY:
                 self.state[idx, :self.n_spins] = self.get_local_diversity(
                     self.matrix, self.state[0, :], target_sets)
-
+            elif observable == Observable.REWARD_DIVERSITY:
+                self.state[idx, :self.n_spins] = self.get_reward_diversity(self.matrix, immeditate_rewards_available)
             elif observable == Observable.TIME_SINCE_FLIP:
                 self.state[idx, :] += (1. / self.max_steps)
                 if randomised_spins:
@@ -850,7 +853,28 @@ class SpinSystemUnbiased(SpinSystemBase):
             set_membership, adj_matrix, action, n_sets) for action in range(len(set_membership))]
 
     @staticmethod
-    @jit('float64[:](float64[:, :], int64[:], int64[:])', nopython=True)
+    @jit(nopython=True)
+    def get_reward_density(adj_matrix, immediate_rewards):
+        """
+        Reward density characterizes the possible rewards from changing to the best sets the neighbor nodes.
+
+        Args:
+            adj_matrix (np.ndarray): The adjacency matrix of the input graph.
+            immediate_rewards (np.ndarray): The immediate rewards of each node.
+        Returns:
+            np.ndarray: Rewards density of each node
+        """
+        n_spins = len(adj_matrix)
+        reward_density = np.zeros(n_spins)
+        for node in range(n_spins):
+            for idx, weight in enumerate(adj_matrix[node]):
+                if weight!=0:
+                    reward_density[node] += immediate_rewards[idx]
+
+        return reward_density       
+
+    @staticmethod
+    @jit(nopython=True)
     def get_local_diversity(adj_matrix, current_sets, target_sets, version=4):
         """
         The difference between the number of nodes in the target set and the current set
