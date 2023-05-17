@@ -252,12 +252,12 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
 
             mean_env_step_time = total_env_step_time / (n_steps*n_attempts)
             mean_predict_time = total_predict_time / n_steps
-            print("Mean env step", mean_env_step_time)
+            #print("Mean env step", mean_env_step_time)
             print("Total env step", total_env_step_time)
-            print("Mean predict time", mean_predict_time)
-            print("Total predict time", total_predict_time)
-            print("Total history time", total_history_time)
-            print("Total conversion time", total_obs_conversion_time)
+            #print("Mean predict time", mean_predict_time)
+            #print("Total predict time", total_predict_time)
+            #print("Total history time", total_history_time)
+            #print("Total conversion time", total_obs_conversion_time)
             t_total += (time.time() - t_start)
             i_batch += 1
             print("Finished agent testing batch {}.".format(i_batch))
@@ -304,7 +304,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 # print("done.")
             current_time = time.time()-t_start
             # print("Time", current_time)
-            print("VNS Solver time", time.time()-start_vns)
+            #print("VNS Solver time", time.time()-start_vns)
 
             if return_history:
                 actions_history += actions_history_batch
@@ -325,15 +325,18 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             # print("\tGraph {}, par. steps: {}, comp: {}/{}".format(j, k, i_comp, batch_size),
             #       end="\r" if n_spins<100 else "")
 
-        print("Finished big while")
+        #print("Finished big while")
         current_time = time.time()-t_start
-        print("Time", current_time)
+        #print("Time", current_time)
         i_best = np.argmax(best_cuts)
         best_cut = best_cuts[i_best]
         sol = best_spins[i_best]
-
+        std = np.std(best_cuts)
         mean_cut = np.mean(best_cuts)
-
+        mean_distance = 0
+        for solution in best_spins:
+            mean_distance += np.count_nonzero(sol!=solution)
+        mean_distance /= len(best_spins)-1
         if env_args["reversible_spins"]:
             idx_best_vns = np.argmax(vns_cuts)
             vns_cut = vns_cuts[idx_best_vns]
@@ -358,11 +361,14 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         #                 t_total/(n_attempts)])
         print("Best cut", best_cut)
         print("mean cut", mean_cut)
+        print("std", std)
+        print("mean distance", mean_distance)
         # print("Greedy single cut", greedy_single_cut)
-        print("VNS best cut", vns_cut)
-        print("VNS mean cut", vns_mean_cut)
+        #print("VNS best cut", vns_cut)
+        #print("VNS mean cut", vns_mean_cut)
+
         results.append(
-            [best_cut, mean_cut, sol, vns_cut, vns_mean_cut, vns_spins])
+            [best_cut, mean_cut, sol, std, mean_distance])
 
         # print("Greedy Random cut", greedy_random_cut)
         # print("Greedy random mean cut", greedy_random_mean_cut)
@@ -375,8 +381,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             history.append([np.array(actions_history).T.tolist(),
                             np.array(scores_history).T.tolist(),
                             np.array(rewards_history).T.tolist()])
-    results = pd.DataFrame(data=results, columns=["best_cut", "mean_cut", "sol",
-                           "vns_cut", "vns_mean_cut", "vns_spins"])
+    results = pd.DataFrame(data=results, columns=["best_cut", "mean_cut", "sol","std", "mean_distance"])
 
     # results = pd.DataFrame(data=results, columns=["cut", "sol",
     #                                               "mean cut",

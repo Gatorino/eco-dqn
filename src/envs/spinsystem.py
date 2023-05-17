@@ -283,8 +283,8 @@ class SpinSystemBase(ABC):
             elif obs == Observable.LOCAL_DIVERSITY:
                 state[idx, :self.n_spins] = self.get_local_diversity(
                     self.matrix, state[0, :], target_sets)
-            elif obs == Observable.GLOBAL_DIVERSITY:
-                state[idx, :self.n_spins] = self.get_global_diversity(state[0, :])
+            #elif obs == Observable.GLOBAL_DIVERSITY:
+             #   state[idx, :self.n_spins] = self.get_global_diversity(state[0, :])
             elif obs == Observable.NUMBER_OF_GREEDY_ACTIONS_AVAILABLE:
                 state[idx, :self.n_spins] = 1 - \
                     np.sum(immediate_rewards_available <= 0) / self.n_spins
@@ -485,8 +485,8 @@ class SpinSystemBase(ABC):
             elif observable == Observable.LOCAL_DIVERSITY:
                 self.state[idx, :self.n_spins] = self.get_local_diversity(
                     self.matrix, self.state[0, :], target_sets)
-            elif observable == Observable.GLOBAL_DIVERSITY:
-                self.state[idx, :self.n_spins] = self.get_global_diversity(self.state[0, :])
+            #elif observable == Observable.GLOBAL_DIVERSITY:
+             #   self.state[idx, :self.n_spins] = self.get_global_diversity(self.state[0, :])
 
             elif observable == Observable.TIME_SINCE_FLIP:
                 self.state[idx, :] += (1. / self.max_steps)
