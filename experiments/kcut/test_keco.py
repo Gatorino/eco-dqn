@@ -122,7 +122,7 @@ def run(
     #                                              batched=batched, max_batch_size=max_batch_size)
 
     experiment_start_time = time.time()
-    results, results_raw = test_network(network, env_args, graphs_test[:10], device, step_factor,
+    results, results_raw = test_network(network, env_args, graphs_test[:1], device, step_factor,
                                         return_raw=True, return_history=False, n_attempts=n_attemps,
                                         batched=batched, max_batch_size=max_batch_size)
 
