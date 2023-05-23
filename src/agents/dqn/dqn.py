@@ -589,6 +589,7 @@ class DQN:
 
             obs_batch = []
 
+            
             i = 0
             if isinstance(actions, int):
                 actions = np.array([actions])

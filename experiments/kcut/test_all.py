@@ -30,24 +30,16 @@ def run(
         batched=True,
         max_batch_size=None,
         step_factor=None,
-        n_attemps=50):
+        n_attemps=10):
 
     train_spins = 800
     graph_spins = 800
     n_sets = 3
 
-<<<<<<< HEAD
-    #save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/benchmarks/gset800"
-    save_loc = f"kcut/g1/batchsize32/ER/benchmark/gset800"
-    network_save_loc = f"kcut/g1/batchsize32/ER/network/network_best.pth"
-    #network_save_loc = f"experiments/pretrained_agent/networks/eco/network_best_BA_{graph_spins}spin.pth"
-    #network_save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/localDiversity/network/network_best.pth"
-=======
-    save_loc = f"kcut/g1/reward_density/ER/benchmarks/gset800"
+    save_loc = f"kcut/g1/reward_density/long/ER/benchmarks/gset800"
     #network_save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/network/network_best.pth"
     #network_save_loc = f"experiments/pretrained_agent/networks/eco/network_best_BA_{graph_spins}spin.pth"
-    network_save_loc = f"kcut/g1/reward_density/ER/network/network_best.pth"
->>>>>>> solo_rewards_density
+    network_save_loc = f"kcut/g1/reward_density/long/ER/network/network_best.pth"
     # graph_save_loc = f"_graphs/validation/BA_{graph_spins}spin_m4_100graphs.pkl"
     graph_save_loc = f"_graphs/benchmarks/gset_800spin_graphs.pkl"
 
@@ -114,13 +106,18 @@ def run(
 
     network = network_fn(n_obs_in=test_env.observation_space.shape[1],
                          **network_args).to(device)
+    
 
-    network.load_state_dict(torch.load(network_save_loc, map_location=device))
-    for param in network.parameters():
-        param.requires_grad = False
-    network.eval()
+    for i in range (1, 51):
+        save = i*50000
+        save_loc = f"kcut/g1/reward_density/long/ER/benchmarks/gset800/network{save}/"
+        mk_dir(save_loc)
+        network_save_loc = f"kcut/g1/reward_density/long/ER/network/network{save}.pth"
+        network.load_state_dict(torch.load(network_save_loc, map_location=device))
+        for param in network.parameters():
+            param.requires_grad = False
+        network.eval()
 
-    print("Sucessfully created agent with pre-trained MPNN.\nMPNN architecture\n\n{}".format(repr(network)))
 
     # ####################################################
     # # TEST NETWORK ON VALIDATION GRAPHS
@@ -129,33 +126,34 @@ def run(
     #                                              return_raw=True, return_history=False, n_attempts=n_attemps,
     #                                              batched=batched, max_batch_size=max_batch_size)
 
-    experiment_start_time = time.time()
-    results, results_raw = test_network(network, env_args, graphs_test[:1], device, step_factor,
-                                        return_raw=True, return_history=False, n_attempts=n_attemps,
-                                        batched=batched, max_batch_size=max_batch_size)
+        experiment_start_time = time.time()
+        results, results_raw = test_network(network, env_args, graphs_test[:1], device, step_factor,
+                                            return_raw=True, return_history=False, n_attempts=n_attemps,
+                                            batched=batched, max_batch_size=max_batch_size)
+        #print(f"results of iteration {i}: {results}"
 
     # print("vns results", results)
-    results_fname = "results_" + \
-        os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + ".pkl"
-    results_raw_fname = "results_" + \
-        os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + "_raw.pkl"
+        results_fname = "results_" + \
+            os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + ".pkl"
+        results_raw_fname = "results_" + \
+            os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + "_raw.pkl"
     # history_fname = "results_" + \
     #     os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + "_history.pkl"
 
     # for res, fname, label in zip([results, results_raw, history],
     #                              [results_fname, results_raw_fname, history_fname],
     #                              ["results", "results_raw", "history"]):
-    for res, fname, label in zip([results, results_raw],
-                                 [results_fname, results_raw_fname],
-                                 ["results", "results_raw"]):
-        save_path = os.path.join(save_loc, fname)
-        res.to_pickle(save_path)
-        print("{} saved to {}".format(label, save_path))
+        for res, fname, label in zip([results, results_raw],
+                                     [results_fname, results_raw_fname],
+                                     ["results", "results_raw"]):
+            save_path = os.path.join(save_loc, fname)
+            res.to_pickle(save_path)
+            print("{} saved to {}".format(label, save_path))
 
-    print("Results", results)
-    print(
-        f"Recap: Networks spins={graph_spins}, Graph spins={graph_spins}, n_sets={n_sets}")
-    print("Total experiment time", time.time()-experiment_start_time)
+        print("Results", results)
+        print(
+            f"Recap: Networks spins={graph_spins}, Graph spins={graph_spins}, n_sets={n_sets}")
+        print("Total experiment time", time.time()-experiment_start_time)
 
 
 if __name__ == "__main__":

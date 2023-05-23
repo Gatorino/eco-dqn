@@ -188,7 +188,10 @@ def run(save_loc=save_loc):
                 final_learning_rate_step=200000,
 
                 update_frequency=32,  # 1
+<<<<<<< HEAD
                 #minibatch_size=64,  # 128
+=======
+>>>>>>> solo_rewards_density
                 minibatch_size=32,  # 128
                 max_grad_norm=None,
                 weight_decay=0,
@@ -208,7 +211,11 @@ def run(save_loc=save_loc):
                 evaluate=True,
                 test_envs=test_envs,
                 test_episodes=n_tests,
+<<<<<<< HEAD
                 test_frequency=10000,  # 10000
+=======
+                test_frequency=1000,  # 10000
+>>>>>>> solo_rewards_density
                 # test_frequency=100,  # 10000
                 test_save_path=test_save_path,
                 test_metric=TestMetric.MAX_CUT,
