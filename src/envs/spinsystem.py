@@ -505,31 +505,32 @@ class SpinSystemBase(ABC):
                 # Update 'Immanency of episode termination'
                 self.state[idx, :] = max(
                     0, ((self.current_step - self.max_steps) / self.horizon_length) + 1)
-                #immanency = self.state[idx, 0]
+                immanency = self.state[idx, 0]
 
             elif observable == Observable.NUMBER_OF_GREEDY_ACTIONS_AVAILABLE:
                 self.state[idx, :] = 1 - \
                     np.sum(
                         immeditate_rewards_available <= 0) / self.n_spins
-                #greedy_available = self.state[idx, 0]
+                greedy_available = self.state[idx, 0]
             
             elif observable == Observable.DISTANCE_FROM_BEST_SCORE:
                 self.state[idx, :] = np.abs(
                     self.score - self.best_obs_score) / self.max_local_reward_available   
-                #distance_from_best_score = self.state[idx, 0]
+                distance_from_best_score = self.state[idx, 0]
 
             elif observable == Observable.DISTANCE_FROM_BEST_STATE:
                 self.state[idx, :self.n_spins] = np.count_nonzero(
                     self.best_obs_spins[:self.n_spins] - self.state[0, :self.n_spins])
-                #distance_from_best_state = self.state[idx, 0]
+                distance_from_best_state = self.state[idx, 0]
 
         #############################################################################################
         # 4. Check termination criteria.                                                            #
         #############################################################################################
-        #print("current step", self.current_step)
+        if self.current_step % 100 == 0:
+            print("current step", self.current_step)
         if self.current_step == self.max_steps:
             # Maximum number of steps taken --> done.
-            # print("Done : maximum number of steps taken")
+            #print("Done : maximum number of steps taken")
             done = True
 
         if not self.reversible_spins:
@@ -538,9 +539,9 @@ class SpinSystemBase(ABC):
                 # print("Done : no more spins to flip")
                 done = True
         #if done:
-         #   print("done in spinsystem")
-        #return (self.get_observation(), rew, done, None, immanency, greedy_available, distance_from_best_score, distance_from_best_state)
-        return (self.get_observation(), rew, done, None)
+            #print("done in spinsystem")
+        return (self.get_observation(), rew, done, None, immanency, greedy_available, distance_from_best_score, distance_from_best_state)
+        #return (self.get_observation(), rew, done, None)
 
     def get_observation(self):
         state = self.state.copy()

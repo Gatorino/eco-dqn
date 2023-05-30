@@ -30,16 +30,16 @@ def run(
         batched=True,
         max_batch_size=None,
         step_factor=None,
-        n_attemps=50):
+        n_attemps=10):
 
     train_spins = 800
     graph_spins = 800
     n_sets = 3
 
-    save_loc = f"kcut/g1/reward_density/ER/benchmarks/gset800"
+    save_loc = f"kcut/g1/reward_density/permutation/ER/benchmarks/gset800"
     #network_save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/network/network_best.pth"
     #network_save_loc = f"experiments/pretrained_agent/networks/eco/network_best_BA_{graph_spins}spin.pth"
-    network_save_loc = f"kcut/g1/reward_density/ER/network/network_best.pth"
+    network_save_loc = f"kcut/g1/reward_density/long/ER/network/network_best.pth"
     # graph_save_loc = f"_graphs/validation/BA_{graph_spins}spin_m4_100graphs.pkl"
     graph_save_loc = f"_graphs/benchmarks/gset_800spin_graphs.pkl"
 
@@ -70,6 +70,7 @@ def run(
     ####################################################
 
     if step_factor is None:
+        #step_factor = 0.01
         step_factor = 2
 
     env_args = {'n_sets': n_sets,
@@ -122,24 +123,24 @@ def run(
     #                                              batched=batched, max_batch_size=max_batch_size)
 
     experiment_start_time = time.time()
-    results, results_raw = test_network(network, env_args, graphs_test[:1], device, step_factor,
-                                        return_raw=True, return_history=False, n_attempts=n_attemps,
+    results, history = test_network(network, env_args, graphs_test[:1], device, step_factor, return_raw=False, return_history=True, n_attempts=n_attemps,
                                         batched=batched, max_batch_size=max_batch_size)
 
     # print("vns results", results)
     results_fname = "results_" + \
         os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + ".pkl"
-    results_raw_fname = "results_" + \
-        os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + "_raw.pkl"
-    # history_fname = "results_" + \
-    #     os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + "_history.pkl"
+    #results_raw_fname = "results_" + \
+     #   os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + "_raw.pkl"
+    history_fname = "results_" + \
+        os.path.splitext(os.path.split(graph_save_loc)[-1])[0] + "_history.pkl"
 
-    # for res, fname, label in zip([results, results_raw, history],
-    #                              [results_fname, results_raw_fname, history_fname],
-    #                              ["results", "results_raw", "history"]):
-    for res, fname, label in zip([results, results_raw],
-                                 [results_fname, results_raw_fname],
-                                 ["results", "results_raw"]):
+    #for res, fname, label in zip([results, results_raw, history],
+     #                            [results_fname, results_raw_fname, history_fname],
+      #                           ["results", "results_raw", "history"]):
+    for res, fname, label in zip([results, history],
+                                 [results_fname, history_fname],
+                                 ["results", "history"]):
+        #print(f"Type of res {type(res)}")
         save_path = os.path.join(save_loc, fname)
         res.to_pickle(save_path)
         print("{} saved to {}".format(label, save_path))

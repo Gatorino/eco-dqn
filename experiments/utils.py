@@ -98,7 +98,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
     n_attempts = n_attempts if env_args["reversible_spins"] else 1
 
     for j, test_graph in enumerate(graphs_test):
-
+        print(f"Starting graph {j}")
         i_comp = 0
         i_batch = 0
         t_total = 0
@@ -128,6 +128,10 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             actions_history = []
             rewards_history = []
             scores_history = []
+            immanencys_history = []
+            greedy_availables_history = []
+            distance_best_scores_history = []
+            distance_best_states_history = []
 
         best_cuts = []
         init_spins = []
@@ -152,6 +156,10 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 actions_history_batch = [[None]*batch_size]
                 rewards_history_batch = [[None] * batch_size]
                 scores_history_batch = []
+                immanencys_history_batch = [[None]*batch_size]
+                greedy_availables_history_batch = [[None]*batch_size]
+                distance_best_scores_history_batch = [[None]*batch_size]
+                distance_best_states_history_batch = [[None]*batch_size]
 
             test_envs = [None] * batch_size
             best_cuts_batch = [-1e3] * batch_size
@@ -180,6 +188,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             for i in range(batch_size):
                 env = deepcopy(test_env)
                 # obs_batch[i] = state_to_one_hot(env.reset(), n_spins)
+                print("Test seed batch size init", np.random.randint(100))
                 spins = np.array(np.random.randint(env.n_sets, size=n_spins)) 
                 #print(f"Testing seed {i}", np.random.randint(100))
                 obs_batch[i] = env.reset(spins)
@@ -224,6 +233,11 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 if return_history:
                     scores = []
                     rewards = []
+                    immanencys = []
+                    greedy_availables = []
+                    distance_best_scores = []
+                    distance_best_states = []
+
 
                 i = 0
                 if isinstance(actions, int):
@@ -232,7 +246,9 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
 
                     if env is not None:
                         env_step_time = time.time()
-                        obs, rew, done, info = env.step(action)
+                        #obs, rew, done, info = env.step(action)
+                        obs, rew, done, info, immanency, greedy_available, distance_best_score, distance_best_state = env.step(action)
+                        #print("greedy", greedy_available)
                         #if done:
                         #    print("done one env")
                         #immanencys[i].append(immanency)
@@ -245,11 +261,16 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                             history_time = time.time()
                             scores.append(env.calculate_score())
                             rewards.append(rew)
+                            immanencys.append(immanency)
+                            greedy_availables.append(greedy_available)
+                            distance_best_scores.append(distance_best_score)
+                            distance_best_states.append(distance_best_states)
                             total_history_time += time.time()-history_time
 
                         if not done:
                             obs_batch.append(obs)
                         else:
+                            #print("One env done") 
                             best_cuts_batch[i] = env.get_best_cut()
                             best_spins_batch[i] = env.best_spins
                             i_comp_batch += 1
@@ -262,6 +283,11 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                     actions_history_batch.append(actions)
                     scores_history_batch.append(scores)
                     rewards_history_batch.append(rewards)
+                    immanencys_history_batch.append(immanencys)
+                    greedy_availables_history_batch.append(greedy_availables)
+                    distance_best_scores_history_batch.append(distance_best_scores)
+                    distance_best_states_history_batch.append(distance_best_states)
+            
 
             # print("\t",
             #       "Par. steps :", k,
@@ -333,6 +359,10 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 actions_history += actions_history_batch
                 rewards_history += rewards_history_batch
                 scores_history += scores_history_batch
+                immanencys_history += immanencys_history_batch
+                greedy_availables_history += greedy_availables_history_batch
+                distance_best_scores_history += distance_best_scores_history_batch
+                distance_best_states_history += distance_best_states_history_batch
 
             best_cuts += best_cuts_batch
             init_spins += init_spins_batch
@@ -403,7 +433,11 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         if return_history:
             history.append([np.array(actions_history).T.tolist(),
                             np.array(scores_history).T.tolist(),
-                            np.array(rewards_history).T.tolist()])
+                            np.array(rewards_history).T.tolist(),
+                            np.array(immanencys_history).T.tolist(),
+                            np.array(greedy_availables_history).T.tolist(),
+                            np.array(distance_best_states_history).T.tolist(),
+                            np.array(distance_best_scores_history).T.tolist()])
     results = pd.DataFrame(data=results, columns=["best_cut", "mean_cut", "sol","std", "mean_distance"])
 
     # results = pd.DataFrame(data=results, columns=["cut", "sol",
@@ -419,7 +453,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
 
     if return_history:
         history = pd.DataFrame(data=history, columns=[
-                               "actions", "scores", "rewards"])
+                               "actions", "scores", "rewards", "immanencys", "greedy_availables", "distance_best_scores", "distance_best_states"])
 
     if return_raw == False and return_history == False:
         return results
