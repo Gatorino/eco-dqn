@@ -9,7 +9,7 @@ import time
 import src.envs.core as ising_env
 from vns import vns
 from experiments.utils import test_network, load_graph_set, mk_dir
-from src.envs.utils import (SingleGraphGenerator, RandomBarabasiAlbertGraphGenerator,
+from src.envs.utils import (SingleGraphGenerator, G1GraphGenerator, RandomBarabasiAlbertGraphGenerator,
                             RewardSignal, ExtraAction, EdgeType,
                             OptimisationTarget, SpinBasis,
                             DEFAULT_OBSERVABLES)
@@ -30,7 +30,7 @@ def run(
         batched=True,
         max_batch_size=None,
         step_factor=None,
-        n_attemps=10):
+        n_attemps=20):
 
     train_spins = 800
     graph_spins = 800
@@ -96,7 +96,8 @@ def run(
     ####################################################
 
     test_env = ising_env.make("SpinSystem",
-                              SingleGraphGenerator(graphs_test[0]),
+                                G1GraphGenerator(n_spins=train_spins, edge_type=EdgeType.UNIFORM),                 
+            #SingleGraphGenerator(graphs_test[0]),
                               graphs_test[0].shape[0] * step_factor,
                               **env_args)
 
@@ -108,11 +109,11 @@ def run(
                          **network_args).to(device)
     
 
-    for i in range (1, 51):
+    for i in range (1, 21):
         save = i*50000
-        save_loc = f"kcut/g1/reward_density/long/ER/benchmarks/gset800/network{save}/"
+        save_loc = f"kcut/g1/reward_density/permutation/ER/20initbis/benchmarks/gset800/network{save}/"
         mk_dir(save_loc)
-        network_save_loc = f"kcut/g1/reward_density/long/ER/network/network{save}.pth"
+        network_save_loc = f"kcut/g1/reward_density/permutation/ER/network/network{save}.pth"
         network.load_state_dict(torch.load(network_save_loc, map_location=device))
         for param in network.parameters():
             param.requires_grad = False
@@ -127,8 +128,8 @@ def run(
     #                                              batched=batched, max_batch_size=max_batch_size)
 
         experiment_start_time = time.time()
-        results, results_raw = test_network(network, env_args, graphs_test[:1], device, step_factor,
-                                            return_raw=True, return_history=False, n_attempts=n_attemps,
+        results = test_network(network, env_args, graphs_test[:1], device, step_factor,
+                                            return_raw=False, return_history=False, n_attempts=n_attemps,
                                             batched=batched, max_batch_size=max_batch_size)
         #print(f"results of iteration {i}: {results}"
 
@@ -143,9 +144,9 @@ def run(
     # for res, fname, label in zip([results, results_raw, history],
     #                              [results_fname, results_raw_fname, history_fname],
     #                              ["results", "results_raw", "history"]):
-        for res, fname, label in zip([results, results_raw],
-                                     [results_fname, results_raw_fname],
-                                     ["results", "results_raw"]):
+        for res, fname, label in zip([results],
+                                     [results_fname],
+                                     ["results"]):
             save_path = os.path.join(save_loc, fname)
             res.to_pickle(save_path)
             print("{} saved to {}".format(label, save_path))

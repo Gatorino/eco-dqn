@@ -10,7 +10,7 @@ import torch
 from collections import namedtuple
 from copy import deepcopy
 
-from vns import vns
+#from vns import vns
 import src.envs.core as ising_env
 from src.envs.utils import (SingleGraphGenerator, SpinBasis)
 from src.agents.solver import Network, Greedy
@@ -133,10 +133,10 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         init_spins = []
         best_spins = []
 
-        vns_cuts = []
-        vns_spins = []
-        # greedy_cuts = []
-        # greedy_spins = []
+        #vns_cuts = []
+        #vns_spins = []
+        #greedy_cuts = []
+        #greedy_spins = []
 
         while i_comp < n_attempts:
             # print("New attempt")
@@ -158,34 +158,43 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             init_spins_batch = [[] for _ in range(batch_size)]
             best_spins_batch = [[] for _ in range(batch_size)]
 
-            # greedy_envs = [None] * batch_size
-            # greedy_cuts_batch = []
-            # greedy_spins_batch = []
+            #greedy_envs = [None] * batch_size
+            #greedy_cuts_batch = []
+            #greedy_spins_batch = []
 
-            vns_envs = [None] * batch_size
-            vns_cuts_batch = []
-            vns_spins_batch = []
+            #vns_envs = [None] * batch_size
+            #vns_cuts_batch = []
+            #vns_spins_batch = []
 
             obs_batch = [None] * batch_size
-
-            print("Preparing batch of {} environments for graph {}.".format(
-                batch_size, j), end="...")
+            
+            #immanencys = [[] for _ in range(batch_size)]
+            #greedy_availables = [[] for _ in range(batch_size)]
+            #distance_from_best_scores = [[] for _ in range(batch_size)]
+            #distance_from_best_states = [[] for _ in range(batch_size)]
+            
+            #print("Preparing batch of {} environments for graph {}.".format(
+             #   batch_size, j), end="...")
             np.random.seed(1)
+            init_cuts = [None] * batch_size
             for i in range(batch_size):
                 env = deepcopy(test_env)
                 # obs_batch[i] = state_to_one_hot(env.reset(), n_spins)
                 spins = np.array(np.random.randint(env.n_sets, size=n_spins)) 
-                print(f"Testing seed {i}", np.random.randint(100))
+                #print(f"Testing seed {i}", np.random.randint(100))
                 obs_batch[i] = env.reset(spins)
                 test_envs[i] = env
-                # greedy_envs[i] = deepcopy(env)
-                vns_envs[i] = deepcopy(env)
+                #greedy_envs[i] = deepcopy(env)
+                #vns_envs[i] = deepcopy(env)
                 init_spins_batch[i] = env.best_spins
+                #init_cuts[i] = env.get_best_cut()
             if return_history:
                 scores_history_batch.append(
                     [env.calculate_score() for env in test_envs])
-
-            print("done.")
+                
+            #for i in range(batch_size):
+            #    print(f"Initial cut n°{i}: {init_cuts[i]}")
+            #print("done.")
 
             # Calculate the max cut acting w.r.t. the network
             t_start = time.time()
@@ -197,6 +206,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             total_env_step_time = 0
             total_history_time = 0
             total_obs_conversion_time = 0
+            #print("Starting to run envs") 
             while i_comp_batch < batch_size:
                 t1 = time.time()
                 # Note: Do not convert list of np.arrays to FloatTensor, it is very slow!
@@ -223,6 +233,12 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                     if env is not None:
                         env_step_time = time.time()
                         obs, rew, done, info = env.step(action)
+                        #if done:
+                        #    print("done one env")
+                        #immanencys[i].append(immanency)
+                        #greedy_availables[i].append(greedy_available)
+                        #distance_from_best_scores[i].append(distance_from_best_score)
+                        #distance_from_best_states[i].append(distance_from_best_state)
                         total_env_step_time += time.time()-env_step_time
 
                         if return_history:
@@ -252,10 +268,13 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             #       "Env steps : {}/{}".format(k/batch_size, n_steps),
             #       'Time: {0:.3g}s'.format(time.time()-t1))
 
+            #dic = {'immanency': immanencys, 'greedy available': greedy_availables, 'distance_score': distance_from_best_scores, 'distance_state': distance_from_best_states}
+            #df = pd.DataFrame(dic)
+            #df.to_csv('global_features.csv')
             mean_env_step_time = total_env_step_time / (n_steps*n_attempts)
             mean_predict_time = total_predict_time / n_steps
             #print("Mean env step", mean_env_step_time)
-            print("Total env step", total_env_step_time)
+            #print("Total env step", total_env_step_time)
             #print("Mean predict time", mean_predict_time)
             #print("Total predict time", total_predict_time)
             #print("Total history time", total_history_time)
@@ -265,45 +284,47 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             print("Finished agent testing batch {}.".format(i_batch))
             print("Network Time", t_total)
 
-            if env_args["reversible_spins"]:
+            #if env_args["reversible_spins"]:
 
-                print("Running vns with {} random initialisations of spins for batch {}...".format(
-                    batch_size, i_batch), end="...")
+            #    print("Running vns with {} random initialisations of spins for batch {}...".format(
+            #        batch_size, i_batch), end="...")
 
-                start_vns = time.time()
+            #    start_vns = time.time()
 
-                adjacency_matrix = test_graph
+            #    adjacency_matrix = test_graph
 
-                for env in vns_envs:
+            #    for env in vns_envs:
                     # print("VNS solving")
                     # current_time = time.time()-t_start
                     # print("Time", current_time)
-                    state = env.state[0, :env.n_spins]
-                    solution = vns.vns(
-                        state, adjacency_matrix, n_sets=env.n_sets, k_max=1)
-                    cut = vns.compute_cut(solution, adjacency_matrix)
-                    vns_cuts_batch.append(cut)
-                    vns_spins_batch.append(solution)
+            #        state = env.state[0, :env.n_spins]
+            #        solution = vns.vns(
+            #            state, adjacency_matrix, n_sets=env.n_sets, k_max=1)
+            #        cut = vns.compute_cut(solution, adjacency_matrix)
+            #        vns_cuts_batch.append(cut)
+            #        vns_spins_batch.append(solution)
 
-                print("done.")
+            #    print("done.")
 
-                # print("Running greedy solver with {} random initialisations of spins for batch {}...".format(
-                #     batch_size, i_batch), end="...")
+                #print("Running greedy solver with {} random initialisations of spins for batch {}...".format(
+                 #   batch_size, i_batch), end="...")
 
                 # current_time = time.time()-t_start
                 # print("Time", current_time)
                 # start_greedy = time.time()
 
-                # for env in greedy_envs:
-                #     # print("Greedy solving")
-                #     # current_time = time.time()-t_start
-                #     # print("Time", current_time)
-                #     Greedy(env).solve()
-                #     cut = env.get_best_cut()
-                #     greedy_cuts_batch.append(cut)
-                #     greedy_spins_batch.append(env.best_spins)
+                #for env in greedy_envs:
+                    # print("Greedy solving")
+                    # current_time = time.time()-t_start
+                    # print("Time", current_time)
+                 #   Greedy(env).solve()
+                  #  cut = env.get_best_cut()
+                   # greedy_cuts_batch.append(cut)
+                    #greedy_spins_batch.append(env.best_spins)
 
-                # print("done.")
+                #for i in range(batch_size):
+                #    print(f"Greedy sol n°{i}: {greedy_cuts_batch[i]}")
+                #print("done.")
             current_time = time.time()-t_start
             # print("Time", current_time)
             #print("VNS Solver time", time.time()-start_vns)
@@ -317,10 +338,10 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             init_spins += init_spins_batch
             best_spins += best_spins_batch
 
-        if env_args["reversible_spins"]:
-            vns_cuts += vns_cuts_batch
-            vns_spins += vns_spins_batch
-            vns_mean_cut = np.mean(vns_cuts)
+        #if env_args["reversible_spins"]:
+            #vns_cuts += vns_cuts_batch
+            #vns_spins += vns_spins_batch
+            #vns_mean_cut = np.mean(vns_cuts)
             #     greedy_cuts += greedy_cuts_batch
             #     greedy_spins += greedy_spins_batch
 
@@ -339,10 +360,10 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         for solution in best_spins:
             mean_distance += np.count_nonzero(sol!=solution)
         mean_distance /= len(best_spins)-1
-        if env_args["reversible_spins"]:
-            idx_best_vns = np.argmax(vns_cuts)
-            vns_cut = vns_cuts[idx_best_vns]
-            vns_spins = vns_spins[idx_best_vns]
+        #if env_args["reversible_spins"]:
+        #    idx_best_vns = np.argmax(vns_cuts)
+        #    vns_cut = vns_cuts[idx_best_vns]
+        #    vns_spins = vns_spins[idx_best_vns]
         #     idx_best_greedy = np.argmax(greedy_cuts)
         #     greedy_random_cut = greedy_cuts[idx_best_greedy]
         #     greedy_random_spins = greedy_spins[idx_best_greedy]
@@ -375,9 +396,9 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         # print("Greedy Random cut", greedy_random_cut)
         # print("Greedy random mean cut", greedy_random_mean_cut)
 
-        results_raw.append([init_spins,
-                            best_cuts, best_spins,
-                            vns_cuts, vns_spins])
+        #results_raw.append([init_spins,
+        #                    best_cuts, best_spins,
+        #                    vns_cuts, vns_spins])
 
         if return_history:
             history.append([np.array(actions_history).T.tolist(),
@@ -392,9 +413,9 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
     #                                               "greedy (rand init) mean cut",
     #                                               "time"])
 
-    results_raw = pd.DataFrame(data=results_raw, columns=["init spins",
-                                                          "cuts", "sols",
-                                                          "vns cuts", "vns sols"])
+    #results_raw = pd.DataFrame(data=results_raw, columns=["init spins",
+    #                                                      "cuts", "sols",
+    #                                                      "vns cuts", "vns sols"])
 
     if return_history:
         history = pd.DataFrame(data=history, columns=[

@@ -480,6 +480,7 @@ class DQN:
 
         # Update weights
         self.optimizer.zero_grad()
+        #loss.requires_grad = True
         loss.backward()
 
         if self.max_grad_norm is not None:  # Optional gradient clipping
@@ -575,7 +576,9 @@ class DQN:
                 if env is None and i_test < self.test_episodes:
                     test_env, testing_in_reversible_spin_env = self.get_random_env(
                         self.test_envs)
+                    #print("reseting env,expect graph get")
                     obs = test_env.reset()
+                    
                     # obs = self.state_to_one_hot(test_env.reset())
                     test_env = deepcopy(test_env)
 

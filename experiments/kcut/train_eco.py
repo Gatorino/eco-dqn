@@ -89,11 +89,14 @@ def run(save_loc=save_loc):
     graphs_test = load_graph_set(graph_save_loc)
     graphs_test = [graphs_test[0]]
     n_tests = len(graphs_test)
+    #n_tests = 10
     print("Number of test graphs:", n_tests)
     print(f"======================\nTest graphs of size {n_spins}")
     
-    test_graph_generator = SetGraphGenerator(graphs_test, ordered=True)
+    #test_graph_generator = SetGraphGenerator(graphs_test, ordered=True)
 
+    test_graph_generator = G1GraphGenerator(
+        n_spins=n_spins_train, edge_type=EdgeType.UNIFORM)
     ####################################################
     # SET UP TRAINING AND TEST ENVIRONMENTS
     ####################################################
@@ -127,11 +130,11 @@ def run(save_loc=save_loc):
     # SET UP AGENT
     ####################################################
 
-    # nb_steps = 2500000
-    nb_steps = 500000
+    nb_steps = 2500000
+    #nb_steps = 1000000
 
     if resume_training:
-
+        print("Resuming training") 
         network_fn = MPNN
         network_args = {
             'n_layers': 3,
@@ -147,10 +150,16 @@ def run(save_loc=save_loc):
         network = network_fn(n_obs_in=train_envs[0].observation_space.shape[1],
                              **network_args)
 
-        network_save_loc = f"kcut/eco/{n_sets}sets/{n_spins}spins/ER/network/network_best.pth"
+        network_save_loc = f"kcut/g1/reward_density/permutation/ER/network/network1000000.pth"
 
         network.load_state_dict(torch.load(
             network_save_loc))
+
+        for param in network.parameters():
+            param.requires_grad = True
+            print("param", param)
+        network.train()
+        #torch.set_grad_enabled(True)
 
         def network_fn(): return network
 
@@ -188,10 +197,6 @@ def run(save_loc=save_loc):
                 final_learning_rate_step=200000,
 
                 update_frequency=32,  # 1
-<<<<<<< HEAD
-                #minibatch_size=64,  # 128
-=======
->>>>>>> solo_rewards_density
                 minibatch_size=32,  # 128
                 max_grad_norm=None,
                 weight_decay=0,
@@ -205,17 +210,13 @@ def run(save_loc=save_loc):
                 logging=False,
                 loss="mse",
 
-                save_network_frequency=50000,  # 100000,
+                save_network_frequency=51200,  # 100000,
                 network_save_path=network_save_path,
 
                 evaluate=True,
                 test_envs=test_envs,
                 test_episodes=n_tests,
-<<<<<<< HEAD
-                test_frequency=10000,  # 10000
-=======
-                test_frequency=1000,  # 10000
->>>>>>> solo_rewards_density
+                test_frequency=25600,  # 10000
                 # test_frequency=100,  # 10000
                 test_save_path=test_save_path,
                 test_metric=TestMetric.MAX_CUT,
