@@ -191,10 +191,11 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             for i in range(batch_size):
                 env = deepcopy(test_env)
                 # obs_batch[i] = state_to_one_hot(env.reset(), n_spins)
-                print("Test seed batch size init", np.random.randint(100))
-                spins = np.array(np.random.randint(env.n_sets, size=n_spins)) 
-                #print(f"Testing seed {i}", np.random.randint(100))
-                obs_batch[i] = env.reset(spins)
+                #print("Test seed batch size init", np.random.randint(100))
+                #spins = np.array(np.random.randint(env.n_sets, size=n_spins)) 
+                print(f"Testing seed {i}", np.random.randint(100))
+                #obs_batch[i] = env.reset(spins)
+                obs_batch[i] = env.reset()
                 test_envs[i] = env
                 #greedy_envs[i] = deepcopy(env)
                 #vns_envs[i] = deepcopy(env)
@@ -228,20 +229,21 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 total_obs_conversion_time += time.time()-obs_conversion_time
                 predict_time = time.time()
                 
-                #states_batch = obs_batch[:,0,:]
+                states_batch = obs_batch[:,0,:]
 
-                #for z in range(batch_size):
-                #    unseen = True
-                #    for obs_tens in big_obs[z]:
-                #        if torch.all(states_batch[z].eq(obs_tens)):
-                #            counter +=1
-                #            unseen = False
-                #            print("obs already visited", counter)
-                #    if unseen:
-                #        big_obs[z].append(states_batch[z])
-                #        counters[z].append(0)
-                #    else:
-                #        counters[z].append(1)
+                for z in range(batch_size):
+                    unseen = True
+                    hashed_state = hash(tuple(states_batch[z]))
+                    for obs_tens in big_obs[z]:
+                        if obs_tens == hashed_state:
+                            counter += 1
+                            unseen = False
+                            print("obs already visited", counter)
+                    if unseen:
+                        big_obs[z].append(hashed_state)
+                        counters[z].append(0)
+                    else:
+                        counters[z].append(1)
                 
                 actions = predict(obs_batch)
                 total_predict_time += time.time()-predict_time
