@@ -516,7 +516,7 @@ class SpinSystemBase(ABC):
             elif observable == Observable.DISTANCE_FROM_BEST_SCORE:
                 self.state[idx, :] = np.abs(
                     self.score - self.best_obs_score) / self.max_local_reward_available   
-                distance_from_best_score = self.state[idx, 0]
+                distance_from_best_score = np.abs(self.score - self.best_obs_score)
 
             elif observable == Observable.DISTANCE_FROM_BEST_STATE:
                 self.state[idx, :self.n_spins] = np.count_nonzero(

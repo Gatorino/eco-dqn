@@ -160,6 +160,9 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 greedy_availables_history_batch = [[None]*batch_size]
                 distance_best_scores_history_batch = [[None]*batch_size]
                 distance_best_states_history_batch = [[None]*batch_size]
+                big_obs = [[] for _ in range(batch_size)]
+                counter = 0
+                counters = [[] for _ in range(batch_size)]
 
             test_envs = [None] * batch_size
             best_cuts_batch = [-1e3] * batch_size
@@ -215,7 +218,6 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             total_env_step_time = 0
             total_history_time = 0
             total_obs_conversion_time = 0
-            #print("Starting to run envs") 
             while i_comp_batch < batch_size:
                 t1 = time.time()
                 # Note: Do not convert list of np.arrays to FloatTensor, it is very slow!
@@ -225,6 +227,22 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 obs_batch = torch.FloatTensor(np.array(obs_batch)).to(device)
                 total_obs_conversion_time += time.time()-obs_conversion_time
                 predict_time = time.time()
+                
+                #states_batch = obs_batch[:,0,:]
+
+                #for z in range(batch_size):
+                #    unseen = True
+                #    for obs_tens in big_obs[z]:
+                #        if torch.all(states_batch[z].eq(obs_tens)):
+                #            counter +=1
+                #            unseen = False
+                #            print("obs already visited", counter)
+                #    if unseen:
+                #        big_obs[z].append(states_batch[z])
+                #        counters[z].append(0)
+                #    else:
+                #        counters[z].append(1)
+                
                 actions = predict(obs_batch)
                 total_predict_time += time.time()-predict_time
                 # print("Predict time", time.time()-predict_time)
@@ -266,6 +284,16 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                             distance_best_scores.append(distance_best_score)
                             distance_best_states.append(distance_best_states)
                             total_history_time += time.time()-history_time
+                            
+                            #states_batch = obs_batch[:,0,:] 
+
+                            #for z in range(batch_size):
+                                #if states_batch[z] in big_obs[z]:
+                                #    print("obs already visited")
+                                #    counter +=1
+                                #else:
+
+
 
                         if not done:
                             obs_batch.append(obs)
@@ -389,7 +417,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         mean_distance = 0
         for solution in best_spins:
             mean_distance += np.count_nonzero(sol!=solution)
-        mean_distance /= len(best_spins)-1
+        mean_distance /= len(best_spins)
         #if env_args["reversible_spins"]:
         #    idx_best_vns = np.argmax(vns_cuts)
         #    vns_cut = vns_cuts[idx_best_vns]
@@ -437,7 +465,8 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                             np.array(immanencys_history).T.tolist(),
                             np.array(greedy_availables_history).T.tolist(),
                             np.array(distance_best_states_history).T.tolist(),
-                            np.array(distance_best_scores_history).T.tolist()])
+                            np.array(distance_best_scores_history).T.tolist(),])
+                            #np.array(counters).T.tolist()])
     results = pd.DataFrame(data=results, columns=["best_cut", "mean_cut", "sol","std", "mean_distance"])
 
     # results = pd.DataFrame(data=results, columns=["cut", "sol",
@@ -454,6 +483,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
     if return_history:
         history = pd.DataFrame(data=history, columns=[
                                "actions", "scores", "rewards", "immanencys", "greedy_availables", "distance_best_scores", "distance_best_states"])
+                               #, "revisited"])
 
     if return_raw == False and return_history == False:
         return results
