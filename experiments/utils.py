@@ -192,10 +192,10 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                 env = deepcopy(test_env)
                 # obs_batch[i] = state_to_one_hot(env.reset(), n_spins)
                 #print("Test seed batch size init", np.random.randint(100))
-                #spins = np.array(np.random.randint(env.n_sets, size=n_spins)) 
+                spins = np.array(np.random.randint(env.n_sets, size=n_spins)) 
                 print(f"Testing seed {i}", np.random.randint(100))
-                #obs_batch[i] = env.reset(spins)
-                obs_batch[i] = env.reset()
+                obs_batch[i] = env.reset(spins)
+                #obs_batch[i] = env.reset()
                 test_envs[i] = env
                 #greedy_envs[i] = deepcopy(env)
                 #vns_envs[i] = deepcopy(env)
@@ -233,18 +233,23 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
 
                 for z in range(batch_size):
                     unseen = True
-                    hashed_state = hash(tuple(states_batch[z]))
+                    hashed_state = hash(tuple(states_batch[z].detach().cpu().numpy()))
+                    #print("hash", tuple(states_batch[z].detach().cpu().numpy()))
                     for obs_tens in big_obs[z]:
+                        #print("obs_tens", obs_tens)
+                        #if torch.all(obs_tens.eq(states_batch[z])):
                         if obs_tens == hashed_state:
                             counter += 1
                             unseen = False
                             print("obs already visited", counter)
+                            break
                     if unseen:
+                        #big_obs[z].append(states_batch[z])
                         big_obs[z].append(hashed_state)
                         counters[z].append(0)
                     else:
                         counters[z].append(1)
-                
+
                 actions = predict(obs_batch)
                 total_predict_time += time.time()-predict_time
                 # print("Predict time", time.time()-predict_time)
@@ -467,8 +472,8 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                             np.array(immanencys_history).T.tolist(),
                             np.array(greedy_availables_history).T.tolist(),
                             np.array(distance_best_states_history).T.tolist(),
-                            np.array(distance_best_scores_history).T.tolist(),])
-                            #np.array(counters).T.tolist()])
+                            np.array(distance_best_scores_history).T.tolist(),
+                            np.array(counters).T.tolist()])
     results = pd.DataFrame(data=results, columns=["best_cut", "mean_cut", "sol","std", "mean_distance"])
 
     # results = pd.DataFrame(data=results, columns=["cut", "sol",
@@ -484,8 +489,8 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
 
     if return_history:
         history = pd.DataFrame(data=history, columns=[
-                               "actions", "scores", "rewards", "immanencys", "greedy_availables", "distance_best_scores", "distance_best_states"])
-                               #, "revisited"])
+                               "actions", "scores", "rewards", "immanencys", "greedy_availables", "distance_best_scores", "distance_best_states", 
+                               "revisited"])
 
     if return_raw == False and return_history == False:
         return results

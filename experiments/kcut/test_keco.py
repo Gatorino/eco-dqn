@@ -36,7 +36,7 @@ def run(
     graph_spins = 800
     n_sets = 3
 
-    save_loc = f"kcut/g1/reward_density/long/ER/benchmarks/gset800"
+    save_loc = f"kcut/g1/reward_density/long/ER/global_obs/SF2/benchmarks/gset800"
     #network_save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/network/network_best.pth"
     #network_save_loc = f"experiments/pretrained_agent/networks/eco/network_best_BA_{graph_spins}spin.pth"
     network_save_loc = f"kcut/g1/reward_density/long/ER/network/network_best.pth"
