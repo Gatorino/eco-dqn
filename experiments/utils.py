@@ -12,7 +12,7 @@ from copy import deepcopy
 
 #from vns import vns
 import src.envs.core as ising_env
-from src.envs.utils import (SingleGraphGenerator, SpinBasis)
+from src.envs.utils import (SingleGraphGenerator, G1GraphGenerator, EdgeType, SpinBasis)
 from src.agents.solver import Network, Greedy
 
 ####################################################
@@ -107,7 +107,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         n_steps = int(n_spins * step_factor)
 
         test_env = ising_env.make("SpinSystem",
-                                  SingleGraphGenerator(test_graph),
+                                  G1GraphGenerator(n_spins, EdgeType.UNIFORM),
                                   n_steps,
                                   **env_args)
 
@@ -179,10 +179,12 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             init_cuts = [None] * batch_size
             for i in range(batch_size):
                 env = deepcopy(test_env)
-                # obs_batch[i] = state_to_one_hot(env.reset(), n_spins)
                 spins = np.array(np.random.randint(env.n_sets, size=n_spins)) 
-                #print(f"Testing seed {i}", np.random.randint(100))
+                
+                print(f"Testing seed {i}", np.random.randint(100))
+                #obs_batch[i] = env.reset()
                 obs_batch[i] = env.reset(spins)
+                #obs_batch[i] = state_to_one_hot(env.reset(), n_spins)
                 test_envs[i] = env
                 #greedy_envs[i] = deepcopy(env)
                 #vns_envs[i] = deepcopy(env)
@@ -233,6 +235,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                     if env is not None:
                         env_step_time = time.time()
                         obs, rew, done, info = env.step(action)
+                        #obs = state_to_one_hot(obs, n_spins)
                         #if done:
                         #    print("done one env")
                         #immanencys[i].append(immanency)
@@ -359,7 +362,7 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
         mean_distance = 0
         for solution in best_spins:
             mean_distance += np.count_nonzero(sol!=solution)
-        mean_distance /= len(best_spins)-1
+        mean_distance /= len(best_spins)
         #if env_args["reversible_spins"]:
         #    idx_best_vns = np.argmax(vns_cuts)
         #    vns_cut = vns_cuts[idx_best_vns]

@@ -272,8 +272,7 @@ class DQN:
             logger = Logger()
 
         # Initialise the state
-        # state = self.state_to_one_hot(self.env.reset())
-        # state = torch.as_tensor(state)
+        #state = torch.as_tensor(self.state_to_one_hot(self.env.reset()))
         state = torch.as_tensor(self.env.reset())
         score = 0
         losses_eps = []
@@ -320,7 +319,7 @@ class DQN:
             # Store transition in replay buffer
             action = torch.as_tensor([action], dtype=torch.long)
             reward = torch.as_tensor([reward], dtype=torch.float)
-            # state_next = self.state_to_one_hot(state_next)
+            #state_next = torch.as_tensor(self.state_to_one_hot(state_next))
             state_next = torch.as_tensor(state_next)
 
             done = torch.as_tensor([done], dtype=torch.float)
@@ -346,8 +345,8 @@ class DQN:
                     logger.add_scalar('Episode_score', score, timestep)
                 self.env, self.acting_in_reversible_spin_env = self.get_random_env()
                 self.replay_buffer = self.get_replay_buffer_for_env(self.env)
-                # state = torch.as_tensor(
-                #     self.state_to_one_hot(self.env.reset()))
+                #state = torch.as_tensor(
+                #    self.state_to_one_hot(self.env.reset()))
                 state = torch.as_tensor(self.env.reset())
                 score = 0
                 losses_eps = []
@@ -578,8 +577,7 @@ class DQN:
                         self.test_envs)
                     #print("reseting env,expect graph get")
                     obs = test_env.reset()
-                    
-                    # obs = self.state_to_one_hot(test_env.reset())
+                    #obs = self.state_to_one_hot(test_env.reset())
                     test_env = deepcopy(test_env)
 
                     test_envs[i] = test_env
@@ -600,7 +598,7 @@ class DQN:
 
                 if env is not None:
                     obs, rew, done, info = env.step(action)
-                    # obs = self.state_to_one_hot(obs)
+                    #obs = self.state_to_one_hot(obs)
                     if self.test_metric == TestMetric.CUMULATIVE_REWARD:
                         batch_scores[i] += rew
 

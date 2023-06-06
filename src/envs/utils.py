@@ -99,7 +99,7 @@ class G1GraphGenerator(GraphGenerator):
     def __init__(self, n_spins, edge_type, biased=False):
         super().__init__(n_spins, edge_type, False)
         current_path = os.path.dirname(os.path.abspath(__file__))
-        #print("Initial path", current_path)
+        self.permu = True
         path = os.path.join(
             current_path, "../../_graphs/benchmarks/gset_800spin_graphs.pkl")
         with open(path, 'rb') as file:
@@ -109,20 +109,23 @@ class G1GraphGenerator(GraphGenerator):
             print("Shape of the first graph:", first_graph.shape)
             self.matrix = first_graph
         self.n_spins = len(self.matrix)
-
+    
     def get(self, with_padding=False):
-        #np.random.seed(1)
-        print(f"Performing permutation n°{np.random.randint(100)} to graph")
-        permu = np.random.permutation(self.n_spins)
-        mapping = {}
-        for idx in range(self.n_spins):
-            mapping[idx] = permu[idx]
-        adj_matrix = nx.from_numpy_array(self.matrix)
-        #print("from numpy array", type(adj_matrix))
-        adj_matrix = nx.relabel_nodes(adj_matrix, mapping)
-        nodelist = np.arange(self.n_spins)
-        adj_matrix = nx.to_numpy_array(adj_matrix, nodelist=nodelist)
-        #print("End type", type(adj_matrix))
+        matrix_invariance = self.permu
+        if matrix_invariance:
+            print(f"Performing permutation n°{np.random.randint(100)} to graph")
+            permu = np.random.permutation(self.n_spins)
+            mapping = {}
+            for idx in range(self.n_spins):
+                   mapping[idx] = permu[idx]
+            adj_matrix = nx.from_numpy_array(self.matrix)
+            adj_matrix = nx.relabel_nodes(adj_matrix, mapping)
+            nodelist = np.arange(self.n_spins)
+            adj_matrix = nx.to_numpy_array(adj_matrix, nodelist=nodelist)
+        else: 
+            np.random.seed(1)
+            print("Not performing permutation on graph, seed 1")
+            adj_matrix = self.matrix
         return adj_matrix
 
 

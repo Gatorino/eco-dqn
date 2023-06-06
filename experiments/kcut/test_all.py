@@ -30,16 +30,16 @@ def run(
         batched=True,
         max_batch_size=None,
         step_factor=None,
-        n_attemps=20):
+        n_attemps=10):
 
     train_spins = 800
     graph_spins = 800
     n_sets = 3
 
-    save_loc = f"kcut/g1/reward_density/long/ER/benchmarks/gset800"
+    #save_loc = f"kcut/g1/reward_density/long/ER/benchmarks/gset800"
     #network_save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/network/network_best.pth"
     #network_save_loc = f"experiments/pretrained_agent/networks/eco/network_best_BA_{graph_spins}spin.pth"
-    network_save_loc = f"kcut/g1/reward_density/long/ER/network/network_best.pth"
+    #network_save_loc = f"kcut/g1/reward_density/long/ER/network/network_best.pth"
     # graph_save_loc = f"_graphs/validation/BA_{graph_spins}spin_m4_100graphs.pkl"
     graph_save_loc = f"_graphs/benchmarks/gset_800spin_graphs.pkl"
 
@@ -49,9 +49,9 @@ def run(
     # FOLDER LOCATIONS
     ####################################################
 
-    print("save location :", save_loc)
-    print("network params location:", network_save_loc)
-    mk_dir(save_loc)
+    #print("save location :", save_loc)
+    #print("network params location:", network_save_loc)
+    #mk_dir(save_loc)
 
     ####################################################
     # NETWORK SETUP
@@ -60,7 +60,7 @@ def run(
     network_fn = MPNN
     network_args = {
         'n_layers': 3,
-        'n_features': 64,
+        'n_features': 64, #64
         'n_hid_readout': [],
         'tied_weights': False
     }
@@ -70,7 +70,7 @@ def run(
     ####################################################
 
     if step_factor is None:
-        step_factor = 2
+        step_factor = 4
 
     env_args = {'n_sets': n_sets,
                 'observables': DEFAULT_OBSERVABLES,
@@ -109,11 +109,11 @@ def run(
                          **network_args).to(device)
     
 
-    for i in range (1, 21):
-        save = i*50000
-        save_loc = f"kcut/g1/reward_density/permutation/ER/20initbis/benchmarks/gset800/network{save}/"
+    for i in range (11, 49):
+        save = i*51200
+        save_loc = f"kcut/g1/reward_density/permutation/SF4/ER/benchmarks/gset800/network{save}/"
         mk_dir(save_loc)
-        network_save_loc = f"kcut/g1/reward_density/permutation/ER/network/network{save}.pth"
+        network_save_loc = f"kcut/g1/reward_density/permutation/SF4/ER/network/network{save}.pth"
         network.load_state_dict(torch.load(network_save_loc, map_location=device))
         for param in network.parameters():
             param.requires_grad = False

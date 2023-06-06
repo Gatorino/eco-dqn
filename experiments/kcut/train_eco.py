@@ -53,7 +53,7 @@ def run(save_loc=save_loc):
     ####################################################
 
     gamma = 0.95
-    step_fact = 2
+    step_fact = 4
 
     env_args = {'n_sets': n_sets,
                 'observables': DEFAULT_OBSERVABLES,
@@ -167,10 +167,10 @@ def run(save_loc=save_loc):
         # self.target_network.load_state_dict(
         #     self.network.state_dict())
     else:
-        # def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1] + n_sets-1,
-        def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1],
+        def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1] + n_sets-1,
+        #def network_fn(): return MPNN(n_obs_in=train_envs[0].observation_space.shape[1],
                                       n_layers=3,
-                                      n_features=64,
+                                      n_features=128, #128,
                                       n_hid_readout=[],
                                       tied_weights=False)
 
