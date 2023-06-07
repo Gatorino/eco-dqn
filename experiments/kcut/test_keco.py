@@ -36,10 +36,10 @@ def run(
     graph_spins = 800
     n_sets = 3
 
-    save_loc = f"kcut/g1/reward_density/long/ER/global_obs/SF2/benchmarks/gset800"
+    save_loc = f"kcut/g1/reward_den_density/permutation/onehot/ER/global_obs/benchmarks/gset800"
     #network_save_loc = f"kcut/eco/{n_sets}sets/{train_spins}spins/network/network_best.pth"
     #network_save_loc = f"experiments/pretrained_agent/networks/eco/network_best_BA_{graph_spins}spin.pth"
-    network_save_loc = f"kcut/g1/reward_density/long/ER/network/network_best.pth"
+    network_save_loc = f"kcut/g1/reward_den_density/permutation/onehot/ER/network/network1228800.pth"
     # graph_save_loc = f"_graphs/validation/BA_{graph_spins}spin_m4_100graphs.pkl"
     graph_save_loc = f"_graphs/benchmarks/gset_800spin_graphs.pkl"
 
@@ -105,7 +105,8 @@ def run(
     torch.device(device)
     print("Set torch default device to {}.".format(device))
 
-    network = network_fn(n_obs_in=test_env.observation_space.shape[1],
+    #network = network_fn(n_obs_in=test_env.observation_space.shape[1],
+    network = network_fn(n_obs_in=test_env.observation_space.shape[1] + n_sets-1,
                          **network_args).to(device)
 
     network.load_state_dict(torch.load(network_save_loc, map_location=device))

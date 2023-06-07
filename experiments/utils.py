@@ -190,11 +190,11 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             init_cuts = [None] * batch_size
             for i in range(batch_size):
                 env = deepcopy(test_env)
-                # obs_batch[i] = state_to_one_hot(env.reset(), n_spins)
                 #print("Test seed batch size init", np.random.randint(100))
                 spins = np.array(np.random.randint(env.n_sets, size=n_spins)) 
                 print(f"Testing seed {i}", np.random.randint(100))
-                obs_batch[i] = env.reset(spins)
+                #obs_batch[i] = env.reset(spins)
+                obs_batch[i] = state_to_one_hot(env.reset(spins), n_spins)
                 #obs_batch[i] = env.reset()
                 test_envs[i] = env
                 #greedy_envs[i] = deepcopy(env)
@@ -273,7 +273,8 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                         env_step_time = time.time()
                         #obs, rew, done, info = env.step(action)
                         obs, rew, done, info, immanency, greedy_available, distance_best_score, distance_best_state = env.step(action)
-                        #print("greedy", greedy_available)
+                        obs = state_to_one_hot(obs, n_spins)                        
+#print("greedy", greedy_available)
                         #if done:
                         #    print("done one env")
                         #immanencys[i].append(immanency)
